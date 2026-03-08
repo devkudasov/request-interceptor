@@ -1,12 +1,9 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 
 const tabs = [
-  { path: '/', label: 'Rules' },
-  { path: '/collections', label: 'Collections' },
+  { path: '/', label: 'Workspace' },
   { path: '/log', label: 'Log' },
   { path: '/recording', label: 'Record' },
-  { path: '/team', label: 'Team' },
-  { path: '/account', label: 'Account' },
 ];
 
 export function Navigation() {
