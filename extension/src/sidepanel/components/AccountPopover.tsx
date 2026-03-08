@@ -1,45 +1,55 @@
-import { useEffect } from 'react';
 import { useAuthStore } from '@/shared/store';
-import { AuthForm } from '../components/AuthForm';
-import { StorageBar } from '../components/StorageBar';
+import { AuthForm } from './AuthForm';
+import { StorageBar } from './StorageBar';
 import { Badge } from '@/ui/common/Badge';
 import { Button } from '@/ui/common/Button';
-import { Spinner } from '@/ui/common/Spinner';
 import {
   PLAN_QUOTAS,
   PLAN_BADGE_VARIANT,
   getInitials,
 } from '@/shared/utils/account';
 
-export function AccountPage() {
-  const { user, loading, logout, fetchUser } = useAuthStore();
+interface AccountPopoverProps {
+  onClose: () => void;
+}
 
-  useEffect(() => {
-    fetchUser();
-  }, [fetchUser]);
-
-  if (loading && !user) {
-    return (
-      <div className="flex items-center justify-center py-2xl">
-        <Spinner size="lg" />
-      </div>
-    );
-  }
+export function AccountPopover({ onClose }: AccountPopoverProps) {
+  const { user, loading, logout } = useAuthStore();
 
   if (!user) {
     return (
-      <div className="py-xl">
+      <div className="p-md">
+        <div className="flex justify-end mb-sm">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="text-content-secondary hover:text-content-primary"
+          >
+            &times;
+          </button>
+        </div>
         <AuthForm />
       </div>
     );
   }
 
   const quota = PLAN_QUOTAS[user.plan];
-  // Hardcoded used storage for now; will be fetched from Firestore later
   const used = 0;
 
   return (
-    <div className="flex flex-col gap-lg">
+    <div className="p-md flex flex-col gap-lg">
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="text-content-secondary hover:text-content-primary"
+        >
+          &times;
+        </button>
+      </div>
+
       {/* User profile header */}
       <div className="flex items-center gap-md">
         {user.photoURL ? (
@@ -73,7 +83,7 @@ export function AccountPage() {
       {/* Email verification warning */}
       {!user.emailVerified && user.email && (
         <div className="flex items-center gap-sm bg-status-warning/10 text-status-warning rounded-md px-md py-sm text-sm">
-          <span>Email not verified. Check your inbox for a verification link.</span>
+          <span>Email not verified. Check your inbox.</span>
         </div>
       )}
 
@@ -83,13 +93,7 @@ export function AccountPage() {
       {/* Actions */}
       <div className="flex flex-col gap-sm">
         {user.plan === 'free' && (
-          <Button
-            variant="secondary"
-            fullWidth
-            onClick={() => {
-              // Placeholder: navigate to pricing page
-            }}
-          >
+          <Button variant="secondary" fullWidth>
             Upgrade Plan
           </Button>
         )}
