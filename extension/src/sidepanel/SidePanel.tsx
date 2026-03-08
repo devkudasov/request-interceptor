@@ -5,6 +5,7 @@ import { RulesPage } from './pages/RulesPage';
 import { RuleEditorPage } from './pages/RuleEditorPage';
 import { CollectionsPage } from './pages/CollectionsPage';
 import { RequestLogPage } from './pages/RequestLogPage';
+import { RecordingPage } from './pages/RecordingPage';
 
 export function SidePanel() {
   return (
@@ -19,6 +20,7 @@ export function SidePanel() {
               <Route path="/rules/:id/edit" element={<RuleEditorPage />} />
               <Route path="/collections" element={<CollectionsPage />} />
               <Route path="/log" element={<RequestLogPage />} />
+              <Route path="/recording" element={<RecordingPage />} />
             </Routes>
           </main>
         </div>

@@ -225,6 +225,7 @@ interface LogState {
   clearLog: () => Promise<void>;
   togglePause: () => void;
   addEntry: (entry: LogEntry) => void;
+  startListening: () => void;
 }
 
 export const useLogStore = create<LogState>((set) => ({
@@ -248,4 +249,44 @@ export const useLogStore = create<LogState>((set) => ({
       if (s.paused) return s;
       return { entries: [entry, ...s.entries].slice(0, 1000) };
     }),
+
+  startListening: () => {
+    chrome.runtime.onMessage.addListener((message) => {
+      if (message.type === MESSAGE_TYPES.LOG_ENTRY && message.payload) {
+        useLogStore.getState().addEntry(message.payload as LogEntry);
+      }
+    });
+  },
+}));
+
+// --- Recording Store ---
+interface RecordingState {
+  isRecording: boolean;
+  recordingTabId: number | null;
+  recordedEntries: LogEntry[];
+  startRecording: (tabId: number) => Promise<void>;
+  stopRecording: () => Promise<LogEntry[]>;
+  fetchRecordingData: () => Promise<void>;
+}
+
+export const useRecordingStore = create<RecordingState>((set) => ({
+  isRecording: false,
+  recordingTabId: null,
+  recordedEntries: [],
+
+  startRecording: async (tabId) => {
+    await sendMessage(MESSAGE_TYPES.START_RECORDING, { tabId });
+    set({ isRecording: true, recordingTabId: tabId, recordedEntries: [] });
+  },
+
+  stopRecording: async () => {
+    const entries = await sendMessage<LogEntry[]>(MESSAGE_TYPES.STOP_RECORDING);
+    set({ isRecording: false, recordingTabId: null, recordedEntries: entries });
+    return entries;
+  },
+
+  fetchRecordingData: async () => {
+    const entries = await sendMessage<LogEntry[]>(MESSAGE_TYPES.RECORDING_DATA);
+    set({ recordedEntries: entries });
+  },
 }));

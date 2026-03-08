@@ -4,6 +4,7 @@ const tabs = [
   { path: '/', label: 'Rules' },
   { path: '/collections', label: 'Collections' },
   { path: '/log', label: 'Log' },
+  { path: '/recording', label: 'Record' },
 ];
 
 export function Navigation() {

@@ -5,11 +5,12 @@ import { Badge } from '@/ui/common/Badge';
 import { methodColors } from '@/ui/theme/tokens';
 
 export function RequestLogPage() {
-  const { entries, paused, fetchLog, clearLog, togglePause } = useLogStore();
+  const { entries, paused, fetchLog, clearLog, togglePause, startListening } = useLogStore();
 
   useEffect(() => {
     fetchLog();
-  }, [fetchLog]);
+    startListening();
+  }, [fetchLog, startListening]);
 
   const handleClear = () => {
     if (confirm('Clear all log entries?')) clearLog();
