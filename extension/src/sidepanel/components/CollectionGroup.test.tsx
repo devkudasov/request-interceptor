@@ -90,8 +90,8 @@ describe('CollectionGroup — header', () => {
     const user = userEvent.setup();
     render(<CollectionGroup {...defaultProps} />);
 
-    const toggle = screen.getByRole('switch');
-    await user.click(toggle);
+    const toggles = screen.getAllByRole('switch');
+    await user.click(toggles[0]);
 
     expect(mockToggleCollection).toHaveBeenCalledWith('c1');
   });
