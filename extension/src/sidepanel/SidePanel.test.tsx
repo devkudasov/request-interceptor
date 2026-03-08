@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
@@ -76,5 +76,40 @@ describe('SidePanel routing — removed routes', () => {
   it('does NOT render AccountPage at /account', () => {
     renderRoutes('/account');
     expect(screen.queryByTestId('account-page')).not.toBeInTheDocument();
+  });
+});
+
+/* --- Bottom bar with AccountButton --- */
+
+vi.mock('@/shared/store', () => ({
+  useAuthStore: vi.fn(() => ({
+    user: null,
+    loading: false,
+    error: null,
+    login: vi.fn(),
+    register: vi.fn(),
+    loginWithGoogle: vi.fn(),
+    loginWithGithub: vi.fn(),
+    logout: vi.fn(),
+    fetchUser: vi.fn(),
+    clearError: vi.fn(),
+  })),
+}));
+
+vi.mock('./components/AccountPopover', () => ({
+  AccountPopover: () => <div data-testid="account-popover" />,
+}));
+
+vi.mock('./components/LoginPopover', () => ({
+  LoginPopover: () => <div data-testid="login-popover" />,
+}));
+
+describe('SidePanel — bottom bar layout', () => {
+  it('renders AccountButton in the SidePanel', async () => {
+    const { SidePanel } = await import('./SidePanel');
+    render(<SidePanel />);
+    expect(
+      screen.getByRole('button', { name: /account/i }),
+    ).toBeInTheDocument();
   });
 });
