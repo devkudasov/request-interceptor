@@ -1,7 +1,7 @@
 # Request Interceptor — Design Specification
 
 ## FigJam User Flows
-- [Main User Flows Diagram](https://www.figma.com/online-whiteboard/create-diagram/ee0e535f-f750-4a7f-9769-e9c696ed7d50)
+- [Main User Flows Diagram](https://www.figma.com/board/vInnFPLU3Hev3koa8AM4F0/Request-Interceptor-%E2%80%94-Main-User-Flows)
 
 ---
 
