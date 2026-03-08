@@ -1,51 +1,13 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useRulesStore, useCollectionsStore } from '@/shared/store';
 import { Button } from '@/ui/common/Button';
 import { Input } from '@/ui/common/Input';
 import { Select } from '@/ui/common/Select';
 import { Toggle } from '@/ui/common/Toggle';
-import { KeyValueEditor } from '../components/KeyValueEditor';
-import { SizeIndicator } from '../components/SizeIndicator';
+import { RuleInputBar } from '../components/rule-editor/RuleInputBar';
+import { ResponseConfig } from '../components/rule-editor/ResponseConfig';
 import type { MockRule, HttpMethod, UrlMatchType, ResponseType, WebSocketMessageRule } from '@/shared/types';
-
-const METHOD_OPTIONS = [
-  { value: 'ANY', label: 'ANY' },
-  { value: 'GET', label: 'GET' },
-  { value: 'POST', label: 'POST' },
-  { value: 'PUT', label: 'PUT' },
-  { value: 'PATCH', label: 'PATCH' },
-  { value: 'DELETE', label: 'DELETE' },
-  { value: 'HEAD', label: 'HEAD' },
-  { value: 'OPTIONS', label: 'OPTIONS' },
-];
-
-const MATCH_TYPE_OPTIONS = [
-  { value: 'wildcard', label: 'Wildcard' },
-  { value: 'regex', label: 'Regex' },
-  { value: 'exact', label: 'Exact' },
-];
-
-const RESPONSE_TYPE_OPTIONS = [
-  { value: 'json', label: 'JSON' },
-  { value: 'raw', label: 'Raw Text' },
-  { value: 'multipart', label: 'Multipart' },
-];
-
-const STATUS_OPTIONS = [
-  { value: '200', label: '200 OK' },
-  { value: '201', label: '201 Created' },
-  { value: '204', label: '204 No Content' },
-  { value: '400', label: '400 Bad Request' },
-  { value: '401', label: '401 Unauthorized' },
-  { value: '403', label: '403 Forbidden' },
-  { value: '404', label: '404 Not Found' },
-  { value: '422', label: '422 Unprocessable Entity' },
-  { value: '429', label: '429 Too Many Requests' },
-  { value: '500', label: '500 Internal Server Error' },
-  { value: '502', label: '502 Bad Gateway' },
-  { value: '503', label: '503 Service Unavailable' },
-];
 
 const REQUEST_TYPE_OPTIONS = [
   { value: 'http', label: 'HTTP (fetch/XHR)' },
@@ -88,8 +50,6 @@ export function RuleEditorPage() {
   useEffect(() => {
     fetchCollections();
   }, [fetchCollections]);
-
-  const bodyBytes = useMemo(() => new Blob([responseBody]).size, [responseBody]);
 
   const collectionOptions = [
     { value: '', label: 'No Collection' },
@@ -156,77 +116,66 @@ export function RuleEditorPage() {
       {/* Request Type */}
       <Select label="Request Type" options={REQUEST_TYPE_OPTIONS} value={requestType} onChange={(v) => setRequestType(v as 'http' | 'websocket')} />
 
-      {/* Request Matching */}
-      <fieldset className="border border-border rounded-md p-md">
-        <legend className="text-sm font-semibold text-content-secondary px-xs">Request Matching</legend>
+      {/* Request Matching — Postman-style input bar */}
+      <RuleInputBar
+        method={method}
+        onMethodChange={setMethod}
+        urlPattern={urlPattern}
+        onUrlPatternChange={(e) => setUrlPattern(e.target.value)}
+        urlMatchType={urlMatchType}
+        onUrlMatchTypeChange={setUrlMatchType}
+        requestType={requestType}
+        autoFocusUrl={!isEdit}
+      />
 
-        <div className="flex flex-col gap-sm">
-          <Input label="URL Pattern" value={urlPattern} onChange={(e) => setUrlPattern(e.target.value)} placeholder="**/api/users" />
-
-          <Select label="Match Type" options={MATCH_TYPE_OPTIONS} value={urlMatchType} onChange={(v) => setUrlMatchType(v as UrlMatchType)} />
-
-          {requestType === 'http' && (
-            <>
-              <Select label="Method" options={METHOD_OPTIONS} value={method} onChange={(v) => setMethod(v as HttpMethod | 'ANY')} />
-
-              <div className="flex flex-col gap-xs">
-                <label className="text-sm font-medium text-content-secondary">Request Body Match (optional)</label>
-                <textarea
-                  className="px-md py-sm text-sm bg-surface-secondary text-content-primary border border-border rounded-md font-mono resize-y min-h-[60px]"
-                  placeholder='{"email": "*"}'
-                  value={bodyMatch}
-                  onChange={(e) => setBodyMatch(e.target.value)}
-                />
-              </div>
-
-              <Input label="GraphQL Operation (optional)" value={graphqlOp} onChange={(e) => setGraphqlOp(e.target.value)} placeholder="GetUsers" />
-            </>
-          )}
-        </div>
-      </fieldset>
-
-      {/* Response */}
-      {requestType === 'http' && (
-        <fieldset className="border border-border rounded-md p-md">
-          <legend className="text-sm font-semibold text-content-secondary px-xs">Response</legend>
-
-          <div className="flex flex-col gap-sm">
-            <Select label="Status Code" options={STATUS_OPTIONS} value={statusCode} onChange={setStatusCode} />
-
-            <Select label="Response Type" options={RESPONSE_TYPE_OPTIONS} value={responseType} onChange={(v) => setResponseType(v as ResponseType)} />
-
+      {/* Advanced Matching (HTTP only) */}
+      {requestType === 'http' && (bodyMatch || graphqlOp || true) && (
+        <details className="group">
+          <summary className="text-sm font-medium text-content-secondary cursor-pointer select-none hover:text-content-primary">
+            Advanced Matching
+          </summary>
+          <div className="flex flex-col gap-sm mt-sm">
             <div className="flex flex-col gap-xs">
-              <label className="text-sm font-medium text-content-secondary">Response Body</label>
+              <label className="text-sm font-medium text-content-secondary">Request Body Match (optional)</label>
               <textarea
-                className={`px-md py-sm text-sm bg-surface-secondary text-content-primary border rounded-md font-mono resize-y min-h-[120px] ${
-                  jsonError ? 'border-status-error' : 'border-border'
-                }`}
-                value={responseBody}
-                onChange={(e) => {
-                  setResponseBody(e.target.value);
-                  validateJson(e.target.value);
-                }}
-                placeholder='{"users": []}'
+                className="px-md py-sm text-sm bg-surface-secondary text-content-primary border border-border rounded-md font-mono resize-y min-h-[60px]"
+                placeholder='{"email": "*"}'
+                value={bodyMatch}
+                onChange={(e) => setBodyMatch(e.target.value)}
               />
-              {jsonError && <span className="text-sm text-status-error">{jsonError}</span>}
-              {responseBody && <SizeIndicator bytes={bodyBytes} />}
             </div>
-
-            <div className="flex flex-col gap-xs">
-              <label className="text-sm font-medium text-content-secondary">Response Headers</label>
-              <KeyValueEditor entries={headers} onChange={setHeaders} keyPlaceholder="Header" valuePlaceholder="Value" />
-            </div>
-
-            <Input label="Delay (ms)" type="number" value={delay} onChange={(e) => setDelay(e.target.value)} placeholder="0" />
+            <Input label="GraphQL Operation (optional)" value={graphqlOp} onChange={(e) => setGraphqlOp(e.target.value)} placeholder="GetUsers" />
           </div>
-        </fieldset>
+        </details>
+      )}
+
+      {/* Response (HTTP only) */}
+      {requestType === 'http' && (
+        <div className="bg-surface-card border border-border rounded-md p-md">
+          <h3 className="text-sm font-semibold text-content-secondary mb-sm">Response</h3>
+          <ResponseConfig
+            statusCode={statusCode}
+            onStatusCodeChange={setStatusCode}
+            responseType={responseType}
+            onResponseTypeChange={(v) => setResponseType(v as ResponseType)}
+            responseBody={responseBody}
+            onResponseBodyChange={(e) => {
+              setResponseBody(e.target.value);
+              validateJson(e.target.value);
+            }}
+            headers={headers}
+            onHeadersChange={setHeaders}
+            delay={delay}
+            onDelayChange={(e) => setDelay(e.target.value)}
+            jsonError={jsonError}
+          />
+        </div>
       )}
 
       {/* WebSocket */}
       {requestType === 'websocket' && (
-        <fieldset className="border border-border rounded-md p-md">
-          <legend className="text-sm font-semibold text-content-secondary px-xs">WebSocket Mock</legend>
-
+        <div className="bg-surface-card border border-border rounded-md p-md">
+          <h3 className="text-sm font-semibold text-content-secondary mb-sm">WebSocket Mock</h3>
           <div className="flex flex-col gap-sm">
             <div className="flex flex-col gap-xs">
               <label className="text-sm font-medium text-content-secondary">On Connect Message</label>
@@ -288,17 +237,19 @@ export function RuleEditorPage() {
               </Button>
             </div>
           </div>
-        </fieldset>
+        </div>
       )}
 
       {/* Organization */}
-      <fieldset className="border border-border rounded-md p-md">
-        <legend className="text-sm font-semibold text-content-secondary px-xs">Organization</legend>
-        <div className="flex flex-col gap-sm">
+      <details open className="group">
+        <summary className="text-sm font-medium text-content-secondary cursor-pointer select-none hover:text-content-primary">
+          Organization
+        </summary>
+        <div className="flex flex-col gap-sm mt-sm">
           <Select label="Collection" options={collectionOptions} value={collectionId} onChange={setCollectionId} />
           <Toggle checked={enabled} onChange={setEnabled} label="Enabled" />
         </div>
-      </fieldset>
+      </details>
 
       {/* Actions */}
       <div className="flex justify-end gap-sm">
