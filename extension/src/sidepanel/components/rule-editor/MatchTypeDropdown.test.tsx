@@ -58,10 +58,10 @@ describe('MatchTypeDropdown — interaction', () => {
 
     const options = screen.getAllByRole('option');
     expect(options).toHaveLength(3);
-    const labels = options.map((opt) => opt.textContent?.toLowerCase());
-    expect(labels).toContain(expect.stringContaining('wild'));
-    expect(labels).toContain(expect.stringContaining('exact'));
-    expect(labels).toContain(expect.stringContaining('regex'));
+    const text = options.map((opt) => opt.textContent ?? '').join(' ').toLowerCase();
+    expect(text).toContain('wild');
+    expect(text).toContain('exact');
+    expect(text).toContain('regex');
   });
 
   it('marks current value as selected', async () => {
