@@ -1,6 +1,8 @@
 import { MESSAGE_TYPES } from '@/shared/constants';
 import { getStorage, setStorage, updateStorage } from './storage';
-import type { MockRule, Collection } from '@/shared/types';
+import { addLogEntry, clearLog as clearLogEntries } from './logger';
+import { startRecording, stopRecording, addRecordedResponse, getRecordedResponses, isRecording, getRecordingTabId } from './recorder';
+import type { MockRule, Collection, LogEntry } from '@/shared/types';
 
 type MessageType = (typeof MESSAGE_TYPES)[keyof typeof MESSAGE_TYPES];
 
@@ -153,8 +155,45 @@ function registerHandlers() {
   });
 
   // --- Log ---
+  registerHandler(MESSAGE_TYPES.LOG_ENTRY, async (payload, sender) => {
+    const data = payload as Omit<LogEntry, 'id' | 'timestamp'>;
+    const entry = await addLogEntry({ ...data, tabId: sender.tab?.id ?? 0 });
+
+    // If recording, also buffer the response
+    const recording = await isRecording();
+    if (recording) {
+      const recordingTabId = await getRecordingTabId();
+      if (sender.tab?.id === recordingTabId && !data.mocked) {
+        addRecordedResponse(entry);
+      }
+    }
+
+    // Broadcast to side panel for real-time updates
+    try {
+      chrome.runtime.sendMessage({ type: MESSAGE_TYPES.LOG_ENTRY, payload: entry });
+    } catch {
+      // Side panel may not be open
+    }
+
+    return entry;
+  });
+
   registerHandler(MESSAGE_TYPES.CLEAR_LOG, async () => {
-    await setStorage('REQUEST_LOG', []);
+    await clearLogEntries();
+  });
+
+  // --- Recording ---
+  registerHandler(MESSAGE_TYPES.START_RECORDING, async (payload) => {
+    const { tabId } = payload as { tabId: number };
+    await startRecording(tabId);
+  });
+
+  registerHandler(MESSAGE_TYPES.STOP_RECORDING, async () => {
+    return stopRecording();
+  });
+
+  registerHandler(MESSAGE_TYPES.RECORDING_DATA, async () => {
+    return getRecordedResponses();
   });
 }
 

@@ -6,9 +6,19 @@ window.addEventListener('message', (event) => {
   if (typeof event.data?.type !== 'string') return;
   if (!event.data.type.startsWith(MESSAGE_PREFIX)) return;
 
-  // Strip prefix and forward to background
-  const type = event.data.type.replace(`${MESSAGE_PREFIX}_`, '');
-  chrome.runtime.sendMessage({ type, payload: event.data.payload });
+  const internalType = event.data.type.replace(`${MESSAGE_PREFIX}_`, '');
+
+  // Map injected script messages to background SW message types
+  if (internalType === 'REQUEST_LOG') {
+    chrome.runtime.sendMessage({
+      type: MESSAGE_TYPES.LOG_ENTRY,
+      payload: event.data.payload,
+    });
+    return;
+  }
+
+  // Forward other messages
+  chrome.runtime.sendMessage({ type: internalType, payload: event.data.payload });
 });
 
 // Relay messages from background SW → injected script (MAIN world)
