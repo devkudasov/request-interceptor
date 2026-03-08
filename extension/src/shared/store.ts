@@ -1,5 +1,18 @@
 import { create } from 'zustand';
-import type { MockRule, Collection, LogEntry, Settings, Theme, AuthUser } from './types';
+import type {
+  MockRule,
+  Collection,
+  LogEntry,
+  Settings,
+  Theme,
+  AuthUser,
+  Team,
+  TeamMember,
+  TeamInvite,
+  TeamRole,
+  ConflictStrategy,
+  VersionSnapshot,
+} from './types';
 import { DEFAULT_SETTINGS, MESSAGE_TYPES } from './constants';
 import { v4 as uuid } from 'uuid';
 
@@ -371,4 +384,273 @@ export const useRecordingStore = create<RecordingState>((set) => ({
     const entries = await sendMessage<LogEntry[]>(MESSAGE_TYPES.RECORDING_DATA);
     set({ recordedEntries: entries });
   },
+}));
+
+// --- Teams Store ---
+interface TeamsState {
+  team: (Team & { members: TeamMember[] }) | null;
+  pendingInvites: TeamInvite[];
+  loading: boolean;
+  error: string | null;
+  createTeam: (name: string) => Promise<void>;
+  fetchTeam: (teamId?: string) => Promise<void>;
+  deleteTeam: (teamId: string) => Promise<void>;
+  inviteMember: (teamId: string, email: string) => Promise<void>;
+  acceptInvite: (inviteId: string) => Promise<void>;
+  declineInvite: (inviteId: string) => Promise<void>;
+  fetchInvites: () => Promise<void>;
+  updateRole: (teamId: string, userId: string, role: TeamRole) => Promise<void>;
+  removeMember: (teamId: string, userId: string) => Promise<void>;
+}
+
+export const useTeamsStore = create<TeamsState>((set, get) => ({
+  team: null,
+  pendingInvites: [],
+  loading: false,
+  error: null,
+
+  createTeam: async (name) => {
+    set({ loading: true, error: null });
+    try {
+      const team = await sendMessage<Team & { members: TeamMember[] }>(
+        MESSAGE_TYPES.CREATE_TEAM,
+        { name },
+      );
+      set({ team, loading: false });
+    } catch (err) {
+      set({ loading: false, error: (err as Error).message });
+    }
+  },
+
+  fetchTeam: async (teamId) => {
+    set({ loading: true, error: null });
+    try {
+      if (!teamId) {
+        const teams = await sendMessage<Team[]>(MESSAGE_TYPES.GET_USER_TEAMS);
+        if (teams.length > 0) {
+          const team = await sendMessage<(Team & { members: TeamMember[] }) | null>(
+            MESSAGE_TYPES.GET_TEAM,
+            { teamId: teams[0].id },
+          );
+          set({ team, loading: false });
+        } else {
+          set({ team: null, loading: false });
+        }
+      } else {
+        const team = await sendMessage<(Team & { members: TeamMember[] }) | null>(
+          MESSAGE_TYPES.GET_TEAM,
+          { teamId },
+        );
+        set({ team, loading: false });
+      }
+    } catch (err) {
+      set({ loading: false, error: (err as Error).message });
+    }
+  },
+
+  deleteTeam: async (teamId) => {
+    set({ loading: true, error: null });
+    try {
+      await sendMessage(MESSAGE_TYPES.DELETE_TEAM, { teamId });
+      set({ team: null, loading: false });
+    } catch (err) {
+      set({ loading: false, error: (err as Error).message });
+    }
+  },
+
+  inviteMember: async (teamId, email) => {
+    set({ error: null });
+    try {
+      await sendMessage(MESSAGE_TYPES.INVITE_MEMBER, { teamId, email });
+      await get().fetchTeam(teamId);
+    } catch (err) {
+      set({ error: (err as Error).message });
+    }
+  },
+
+  acceptInvite: async (inviteId) => {
+    set({ error: null });
+    try {
+      await sendMessage(MESSAGE_TYPES.ACCEPT_INVITE, { inviteId });
+      set((s) => ({ pendingInvites: s.pendingInvites.filter((i) => i.id !== inviteId) }));
+      await get().fetchTeam();
+    } catch (err) {
+      set({ error: (err as Error).message });
+    }
+  },
+
+  declineInvite: async (inviteId) => {
+    set({ error: null });
+    try {
+      await sendMessage(MESSAGE_TYPES.DECLINE_INVITE, { inviteId });
+      set((s) => ({ pendingInvites: s.pendingInvites.filter((i) => i.id !== inviteId) }));
+    } catch (err) {
+      set({ error: (err as Error).message });
+    }
+  },
+
+  fetchInvites: async () => {
+    set({ error: null });
+    try {
+      const invites = await sendMessage<TeamInvite[]>(MESSAGE_TYPES.GET_PENDING_INVITES);
+      set({ pendingInvites: invites });
+    } catch (err) {
+      set({ error: (err as Error).message });
+    }
+  },
+
+  updateRole: async (teamId, userId, role) => {
+    set({ error: null });
+    try {
+      await sendMessage(MESSAGE_TYPES.UPDATE_MEMBER_ROLE, { teamId, userId, role });
+      await get().fetchTeam(teamId);
+    } catch (err) {
+      set({ error: (err as Error).message });
+    }
+  },
+
+  removeMember: async (teamId, userId) => {
+    set({ error: null });
+    try {
+      await sendMessage(MESSAGE_TYPES.REMOVE_MEMBER, { teamId, userId });
+      await get().fetchTeam(teamId);
+    } catch (err) {
+      set({ error: (err as Error).message });
+    }
+  },
+}));
+
+// --- Sync Store ---
+interface SyncState {
+  syncing: boolean;
+  lastSyncAt: string | null;
+  conflict: { local: { name: string }; remote: { name: string } } | null;
+  error: string | null;
+  pushToCloud: () => Promise<void>;
+  pullFromCloud: () => Promise<void>;
+  resolveConflict: (strategy: ConflictStrategy) => Promise<void>;
+}
+
+export const useSyncStore = create<SyncState>((set) => ({
+  syncing: false,
+  lastSyncAt: null,
+  conflict: null,
+  error: null,
+
+  pushToCloud: async () => {
+    set({ syncing: true, error: null });
+    try {
+      await sendMessage(MESSAGE_TYPES.PUSH_COLLECTION);
+      set({ syncing: false, lastSyncAt: new Date().toISOString() });
+    } catch (err) {
+      set({ syncing: false, error: (err as Error).message });
+    }
+  },
+
+  pullFromCloud: async () => {
+    set({ syncing: true, error: null });
+    try {
+      const result = await sendMessage<{ conflict?: { local: { name: string }; remote: { name: string } } }>(
+        MESSAGE_TYPES.PULL_COLLECTION,
+      );
+      if (result?.conflict) {
+        set({ syncing: false, conflict: result.conflict });
+      } else {
+        set({ syncing: false, lastSyncAt: new Date().toISOString(), conflict: null });
+      }
+    } catch (err) {
+      set({ syncing: false, error: (err as Error).message });
+    }
+  },
+
+  resolveConflict: async (strategy) => {
+    set({ syncing: true, error: null });
+    try {
+      await sendMessage(MESSAGE_TYPES.PULL_COLLECTION, { strategy });
+      set({ syncing: false, conflict: null, lastSyncAt: new Date().toISOString() });
+    } catch (err) {
+      set({ syncing: false, error: (err as Error).message });
+    }
+  },
+}));
+
+// --- Version History Store ---
+interface VersionHistoryState {
+  versions: VersionSnapshot[];
+  selectedVersion: VersionSnapshot | null;
+  loading: boolean;
+  hasMore: boolean;
+  error: string | null;
+  fetchVersions: (teamId: string, collectionId: string) => Promise<void>;
+  loadMore: (teamId: string, collectionId: string) => Promise<void>;
+  selectVersion: (teamId: string, collectionId: string, versionId: string) => Promise<void>;
+  restoreVersion: (versionId: string) => Promise<void>;
+  clearSelection: () => void;
+}
+
+export const useVersionStore = create<VersionHistoryState>((set, get) => ({
+  versions: [],
+  selectedVersion: null,
+  loading: false,
+  hasMore: false,
+  error: null,
+
+  fetchVersions: async (teamId, collectionId) => {
+    set({ loading: true, error: null, versions: [], selectedVersion: null });
+    try {
+      const versions = await sendMessage<VersionSnapshot[]>(
+        MESSAGE_TYPES.GET_VERSION_HISTORY,
+        { teamId, collectionId },
+      );
+      set({ versions, loading: false, hasMore: versions.length >= 20 });
+    } catch (err) {
+      set({ loading: false, error: (err as Error).message });
+    }
+  },
+
+  loadMore: async (teamId, collectionId) => {
+    const { versions } = get();
+    const lastVersion = versions[versions.length - 1];
+    if (!lastVersion) return;
+
+    set({ loading: true, error: null });
+    try {
+      const moreVersions = await sendMessage<VersionSnapshot[]>(
+        MESSAGE_TYPES.GET_VERSION_HISTORY,
+        { teamId, collectionId, startAfterId: lastVersion.id },
+      );
+      set((s) => ({
+        versions: [...s.versions, ...moreVersions],
+        loading: false,
+        hasMore: moreVersions.length >= 20,
+      }));
+    } catch (err) {
+      set({ loading: false, error: (err as Error).message });
+    }
+  },
+
+  selectVersion: async (teamId, collectionId, versionId) => {
+    set({ loading: true, error: null });
+    try {
+      const version = await sendMessage<VersionSnapshot | null>(
+        MESSAGE_TYPES.GET_VERSION,
+        { teamId, collectionId, versionId },
+      );
+      set({ selectedVersion: version, loading: false });
+    } catch (err) {
+      set({ loading: false, error: (err as Error).message });
+    }
+  },
+
+  restoreVersion: async (versionId) => {
+    set({ loading: true, error: null });
+    try {
+      await sendMessage(MESSAGE_TYPES.RESTORE_VERSION, { versionId });
+      set({ loading: false });
+    } catch (err) {
+      set({ loading: false, error: (err as Error).message });
+    }
+  },
+
+  clearSelection: () => set({ selectedVersion: null }),
 }));

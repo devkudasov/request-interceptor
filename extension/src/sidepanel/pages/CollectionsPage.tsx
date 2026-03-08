@@ -1,16 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
-import { useCollectionsStore, useRulesStore } from '@/shared/store';
+import { useNavigate } from 'react-router-dom';
+import { useCollectionsStore, useRulesStore, useTeamsStore, useAuthStore } from '@/shared/store';
 import { Button } from '@/ui/common/Button';
 import { Input } from '@/ui/common/Input';
 import { Toggle } from '@/ui/common/Toggle';
 import { Modal } from '@/ui/common/Modal';
 import { Spinner } from '@/ui/common/Spinner';
+import { SyncControls } from '../components/SyncControls';
 import { exportCollections, downloadJson, parseImportFile, resolveConflicts } from '@/shared/import-export';
 import type { ConflictResolution, ImportResult } from '@/shared/import-export';
 
 export function CollectionsPage() {
   const { collections, loading, fetchCollections, createCollection, deleteCollection, toggleCollection } = useCollectionsStore();
   const { rules, fetchRules } = useRulesStore();
+  const { user } = useAuthStore();
+  const { team } = useTeamsStore();
+  const navigate = useNavigate();
   const [showNew, setShowNew] = useState(false);
   const [newName, setNewName] = useState('');
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
@@ -93,6 +98,8 @@ export function CollectionsPage() {
       </div>
       <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={handleFileChange} />
 
+      <SyncControls />
+
       {collections.length === 0 && (
         <p className="text-center py-lg text-content-secondary text-base">
           No collections yet. Create one to organize your mocks.
@@ -106,6 +113,11 @@ export function CollectionsPage() {
               <Toggle checked={col.enabled} onChange={() => toggleCollection(col.id)} />
               <span className="flex-1 text-base font-medium">{col.name}</span>
               <span className="text-sm text-content-muted">{getRuleCount(col.id)} rules</span>
+              {user && team && (
+                <Button variant="ghost" size="sm" onClick={() => navigate(`/collections/${col.id}/versions`)}>
+                  History
+                </Button>
+              )}
               <Button variant="ghost" size="sm" onClick={() => handleDelete(col.id)}>Del</Button>
             </div>
             {getChildren(col.id).map((child) => (

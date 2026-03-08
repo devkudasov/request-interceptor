@@ -5,6 +5,7 @@ const tabs = [
   { path: '/collections', label: 'Collections' },
   { path: '/log', label: 'Log' },
   { path: '/recording', label: 'Record' },
+  { path: '/team', label: 'Team' },
   { path: '/account', label: 'Account' },
 ];
 

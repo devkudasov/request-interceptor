@@ -11,6 +11,31 @@ import {
   signOut,
   getCurrentUser,
 } from './firebase-auth';
+import {
+  createTeam,
+  inviteMember,
+  acceptInvite,
+  declineInvite,
+  updateMemberRole,
+  removeMember,
+  deleteTeam,
+  getTeam,
+  getUserTeams,
+  getPendingInvites,
+} from './firestore-teams';
+import {
+  pushCollection as pushCollectionToCloud,
+  pullCollection as pullCollectionFromCloud,
+  detectConflicts,
+  resolveConflict,
+  getLastSyncTimestamp,
+} from './firestore-sync';
+import {
+  getVersionHistory,
+  getVersion,
+  restoreVersion,
+} from './firestore-versions';
+import type { TeamRole, ConflictStrategy } from '@/shared/types';
 
 type MessageType = (typeof MESSAGE_TYPES)[keyof typeof MESSAGE_TYPES];
 
@@ -229,6 +254,144 @@ function registerHandlers() {
 
   registerHandler(MESSAGE_TYPES.GET_CURRENT_USER, async () => {
     return getCurrentUser();
+  });
+
+  // --- Teams ---
+  registerHandler(MESSAGE_TYPES.CREATE_TEAM, async (payload) => {
+    const { name } = payload as { name: string };
+    return createTeam(name);
+  });
+
+  registerHandler(MESSAGE_TYPES.GET_TEAM, async (payload) => {
+    const { teamId } = payload as { teamId: string };
+    return getTeam(teamId);
+  });
+
+  registerHandler(MESSAGE_TYPES.GET_USER_TEAMS, async () => {
+    const user = await getCurrentUser();
+    if (!user) throw new Error('Not authenticated');
+    return getUserTeams(user.uid);
+  });
+
+  registerHandler(MESSAGE_TYPES.DELETE_TEAM, async (payload) => {
+    const { teamId } = payload as { teamId: string };
+    await deleteTeam(teamId);
+  });
+
+  registerHandler(MESSAGE_TYPES.INVITE_MEMBER, async (payload) => {
+    const { teamId, email } = payload as { teamId: string; email: string };
+    return inviteMember(teamId, email);
+  });
+
+  registerHandler(MESSAGE_TYPES.ACCEPT_INVITE, async (payload) => {
+    const { inviteId } = payload as { inviteId: string };
+    await acceptInvite(inviteId);
+  });
+
+  registerHandler(MESSAGE_TYPES.DECLINE_INVITE, async (payload) => {
+    const { inviteId } = payload as { inviteId: string };
+    await declineInvite(inviteId);
+  });
+
+  registerHandler(MESSAGE_TYPES.GET_PENDING_INVITES, async () => {
+    const user = await getCurrentUser();
+    if (!user) throw new Error('Not authenticated');
+    if (!user.email) throw new Error('User email not available');
+    return getPendingInvites(user.email);
+  });
+
+  registerHandler(MESSAGE_TYPES.UPDATE_MEMBER_ROLE, async (payload) => {
+    const { teamId, userId, role } = payload as { teamId: string; userId: string; role: TeamRole };
+    await updateMemberRole(teamId, userId, role);
+  });
+
+  registerHandler(MESSAGE_TYPES.REMOVE_MEMBER, async (payload) => {
+    const { teamId, userId } = payload as { teamId: string; userId: string };
+    await removeMember(teamId, userId);
+  });
+
+  // --- Cloud Sync ---
+  registerHandler(MESSAGE_TYPES.PUSH_COLLECTION, async (payload) => {
+    const { teamId, collectionId } = payload as {
+      teamId: string;
+      collectionId: string;
+    };
+
+    const collections = await getStorage('COLLECTIONS');
+    const rules = await getStorage('RULES');
+
+    const col = collections.find((c) => c.id === collectionId);
+    if (!col) throw new Error('Collection not found');
+
+    const colRules = rules.filter((r) => r.collectionId === collectionId);
+    return pushCollectionToCloud(teamId, col, colRules);
+  });
+
+  registerHandler(MESSAGE_TYPES.PULL_COLLECTION, async (payload) => {
+    const { teamId, collectionId, strategy } = payload as {
+      teamId: string;
+      collectionId: string;
+      strategy?: ConflictStrategy;
+    };
+
+    const result = await pullCollectionFromCloud(teamId, collectionId);
+    if (!result) throw new Error('Collection not found in cloud');
+
+    const collections = await getStorage('COLLECTIONS');
+    const localCol = collections.find((c) => c.id === collectionId);
+
+    if (localCol && !strategy) {
+      const conflictResult = detectConflicts(localCol, result.collection as Collection);
+      if (conflictResult.hasConflict) {
+        return { conflict: conflictResult };
+      }
+    }
+
+    const effectiveStrategy = strategy ?? 'replace-local';
+    const resolved = resolveConflict(effectiveStrategy, localCol ?? result.collection as Collection, result.collection as Collection);
+
+    await setStorage(
+      'COLLECTIONS',
+      localCol
+        ? collections.map((c) => (c.id === collectionId ? resolved : c))
+        : [...collections, resolved],
+    );
+
+    return { conflict: null };
+  });
+
+  registerHandler(MESSAGE_TYPES.GET_SYNC_STATUS, async (payload) => {
+    const { teamId, collectionId } = payload as { teamId: string; collectionId: string };
+    const lastSync = await getLastSyncTimestamp(teamId, collectionId);
+    return { lastSync };
+  });
+
+  // --- Version History ---
+  registerHandler(MESSAGE_TYPES.GET_VERSION_HISTORY, async (payload) => {
+    const { teamId, collectionId, startAfterId } = payload as {
+      teamId: string;
+      collectionId: string;
+      startAfterId?: string;
+    };
+    return getVersionHistory(teamId, collectionId, { limit: 20, startAfter: startAfterId });
+  });
+
+  registerHandler(MESSAGE_TYPES.GET_VERSION, async (payload) => {
+    const { teamId, collectionId, versionId } = payload as {
+      teamId: string;
+      collectionId: string;
+      versionId: string;
+    };
+    return getVersion(teamId, collectionId, versionId);
+  });
+
+  registerHandler(MESSAGE_TYPES.RESTORE_VERSION, async (payload) => {
+    const { teamId, collectionId, versionId } = payload as {
+      teamId: string;
+      collectionId: string;
+      versionId: string;
+    };
+    return restoreVersion(teamId, collectionId, versionId);
   });
 }
 

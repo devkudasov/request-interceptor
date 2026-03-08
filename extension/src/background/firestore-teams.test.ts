@@ -383,7 +383,7 @@ describe('getPendingInvites', () => {
     const result = await getPendingInvites('user@example.com');
 
     expect(result).toHaveLength(1);
-    expect(result[0].status).toBe('pending');
+    expect((result[0] as Record<string, unknown>).status).toBe('pending');
   });
 
   it('returns empty array when no pending invites', async () => {

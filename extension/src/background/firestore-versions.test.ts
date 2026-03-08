@@ -108,8 +108,8 @@ describe('getVersionHistory', () => {
     const result = await getVersionHistory('team-1', 'col-1');
 
     expect(result).toHaveLength(3);
-    expect(result[0].version).toBe(3);
-    expect(result[2].version).toBe(1);
+    expect((result[0] as Record<string, unknown>).version).toBe(3);
+    expect((result[2] as Record<string, unknown>).version).toBe(1);
   });
 
   it('returns empty array when no versions exist', async () => {
@@ -203,8 +203,8 @@ describe('getVersion', () => {
     const result = await getVersion('team-1', 'col-1', 'v-2');
 
     expect(result).toBeDefined();
-    expect(result?.version).toBe(2);
-    expect(result?.rulesSnapshot).toHaveLength(1);
+    expect((result as Record<string, unknown>)?.version).toBe(2);
+    expect((result as Record<string, unknown>)?.rulesSnapshot).toHaveLength(1);
   });
 
   it('returns null when version does not exist', async () => {

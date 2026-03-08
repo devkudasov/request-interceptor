@@ -83,6 +83,77 @@ export interface Settings {
   maxLogEntries: number;
 }
 
+export interface Team {
+  id: string;
+  name: string;
+  ownerId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TeamMember {
+  userId: string;
+  email: string;
+  displayName: string | null;
+  role: TeamRole;
+  joinedAt: string;
+}
+
+export interface TeamInvite {
+  id: string;
+  teamId: string;
+  teamName: string;
+  email: string;
+  invitedBy: string;
+  status: 'pending' | 'accepted' | 'declined';
+  createdAt: string;
+}
+
+export interface CloudCollection {
+  id: string;
+  name: string;
+  parentId: string | null;
+  enabled: boolean;
+  order: number;
+  rules: MockRule[];
+  version: number;
+  updatedBy: string;
+  updatedAt: string;
+  lastPushedBy: string;
+}
+
+export interface VersionSnapshot {
+  id: string;
+  version: number;
+  rules: MockRule[];
+  rulesSnapshot: Array<{
+    id: string;
+    urlPattern: string;
+    method: string;
+    statusCode: number;
+  }>;
+  author: { uid: string; displayName: string };
+  createdBy: string;
+  createdByEmail: string | null;
+  createdAt: string;
+  message: string;
+  collectionSnapshot?: {
+    name: string;
+    ruleIds: string[];
+  };
+}
+
+export type ConflictStrategy = 'merge' | 'replace-local' | 'replace-cloud';
+
+export interface SyncConflict {
+  collectionId: string;
+  collectionName: string;
+  localUpdatedAt: string;
+  cloudUpdatedAt: string;
+  localVersion: number;
+  cloudVersion: number;
+}
+
 export interface StorageSchema {
   activeTabIds: number[];
   isRecording: boolean;

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 const mockFetchVersions = vi.fn();
@@ -110,7 +110,7 @@ describe('VersionHistoryPage — version list', () => {
   it('shows author name for each version', () => {
     render(<VersionHistoryPage />);
 
-    expect(screen.getByText(/Alice/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Alice/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Bob/)).toBeInTheDocument();
   });
 
@@ -118,7 +118,7 @@ describe('VersionHistoryPage — version list', () => {
     render(<VersionHistoryPage />);
 
     // Should show some date representation for each version
-    expect(screen.getByText(/Mar/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Mar/i).length).toBeGreaterThan(0);
   });
 
   it('shows "Restore" button for each version', () => {
@@ -158,7 +158,7 @@ describe('VersionHistoryPage — restore', () => {
     await user.click(restoreButtons[0]);
 
     // Should show confirmation dialog
-    expect(screen.getByText(/confirm/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /confirm/i })).toBeInTheDocument();
   });
 
   it('confirming restore calls restoreVersion and creates new version', async () => {
