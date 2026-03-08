@@ -218,6 +218,16 @@ function registerHandlers() {
   // --- Recording ---
   registerHandler(MESSAGE_TYPES.START_RECORDING, async (payload) => {
     const { tabId } = payload as { tabId: number };
+
+    // Ensure the tab is active so the interceptor is injected
+    const activeTabIds = await getStorage('ACTIVE_TAB_IDS');
+    if (!activeTabIds.includes(tabId)) {
+      await updateStorage('ACTIVE_TAB_IDS', (tabs) => [...tabs, tabId]);
+    }
+
+    // Inject interceptor and start recording
+    const { injectInterceptor } = await import('./tab-manager');
+    await injectInterceptor(tabId);
     await startRecording(tabId);
   });
 

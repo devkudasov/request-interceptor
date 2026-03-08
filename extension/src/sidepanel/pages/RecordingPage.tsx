@@ -25,10 +25,11 @@ export function RecordingPage() {
   }, [fetchTabs]);
 
   useEffect(() => {
-    if (activeTabIds.length > 0 && !selectedTabId) {
-      setSelectedTabId(activeTabIds[0]);
+    if (tabs.length > 0 && !selectedTabId) {
+      const preferred = tabs.find((t) => activeTabIds.includes(t.id!));
+      setSelectedTabId(preferred?.id ?? tabs[0]?.id ?? null);
     }
-  }, [activeTabIds, selectedTabId]);
+  }, [tabs, activeTabIds, selectedTabId]);
 
   const handleStart = async () => {
     if (!selectedTabId) return;
@@ -77,8 +78,6 @@ export function RecordingPage() {
     setShowSave(false);
   };
 
-  const activeTabs = tabs.filter((t) => activeTabIds.includes(t.id!));
-
   return (
     <div className="flex flex-col gap-md">
       <h2 className="text-lg font-semibold">Record Responses</h2>
@@ -88,9 +87,9 @@ export function RecordingPage() {
           <p className="text-sm text-content-secondary">
             Record real API responses from a tab and save them as mock rules.
           </p>
-          {activeTabs.length === 0 ? (
+          {tabs.length === 0 ? (
             <p className="text-sm text-content-muted">
-              Enable interception on at least one tab first.
+              No tabs available for recording.
             </p>
           ) : (
             <>
@@ -98,7 +97,7 @@ export function RecordingPage() {
                 label="Tab to record"
                 value={String(selectedTabId ?? '')}
                 onChange={(value) => setSelectedTabId(Number(value))}
-                options={activeTabs.map((t) => ({ value: String(t.id), label: t.title ?? `Tab ${t.id}` }))}
+                options={tabs.map((t) => ({ value: String(t.id), label: t.title ?? `Tab ${t.id}` }))}
               />
               <Button onClick={handleStart} disabled={!selectedTabId}>
                 Start Recording
