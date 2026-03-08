@@ -18,10 +18,6 @@ const wsRule: MockRule = {
   ...httpRule, id: 'r2', requestType: 'websocket', collectionId: null,
 };
 
-const gqlRule: MockRule = {
-  ...httpRule, id: 'r3', graphqlOperation: 'GetUser', collectionId: 'c1',
-};
-
 const ungroupedRule: MockRule = {
   ...httpRule, id: 'r4', collectionId: null, urlPattern: 'https://other.com/api',
 };

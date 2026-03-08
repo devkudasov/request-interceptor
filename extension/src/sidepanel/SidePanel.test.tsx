@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
@@ -8,9 +8,7 @@ function RuleEditorPage() { return <div data-testid="rule-editor-page">RuleEdito
 function RequestLogPage() { return <div data-testid="request-log-page">RequestLogPage</div>; }
 function RecordingPage() { return <div data-testid="recording-page">RecordingPage</div>; }
 function VersionHistoryPage() { return <div data-testid="version-history-page">VersionHistoryPage</div>; }
-function CollectionsPage() { return <div data-testid="collections-page">CollectionsPage</div>; }
-function TeamPage() { return <div data-testid="team-page">TeamPage</div>; }
-function AccountPage() { return <div data-testid="account-page">AccountPage</div>; }
+// These pages are intentionally NOT in the route config — tests verify they don't render
 
 /**
  * Renders the expected route config that SidePanel.tsx should have after
