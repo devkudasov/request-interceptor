@@ -1,5 +1,6 @@
 import { initializeStorage } from './storage';
 import { setupMessageHandler } from './message-handler';
+import { setupTabListeners } from './tab-manager';
 
 chrome.runtime.onInstalled.addListener(async (details) => {
   if (details.reason === 'install') {
@@ -8,17 +9,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   }
 });
 
-// Clean up closed tabs from activeTabIds
-chrome.tabs.onRemoved.addListener(async (tabId) => {
-  const result = await chrome.storage.local.get('activeTabIds');
-  const activeTabIds: number[] = result.activeTabIds ?? [];
-  if (activeTabIds.includes(tabId)) {
-    await chrome.storage.local.set({
-      activeTabIds: activeTabIds.filter((id) => id !== tabId),
-    });
-  }
-});
-
 setupMessageHandler();
+setupTabListeners();
 
 console.log('[Request Interceptor] Background service worker started');
