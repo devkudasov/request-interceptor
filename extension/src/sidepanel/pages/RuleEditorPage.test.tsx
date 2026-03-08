@@ -23,10 +23,7 @@ vi.mock('@/shared/store', () => ({
     updateRule: mockUpdateRule,
   })),
   useCollectionsStore: vi.fn(() => ({
-    collections: [
-      { id: 'col-1', name: 'API Mocks' },
-      { id: 'col-2', name: 'Auth Mocks' },
-    ],
+    collections: [],
     fetchCollections: mockFetchCollections,
   })),
 }));
@@ -61,27 +58,10 @@ describe('RuleEditorPage — layout', () => {
     expect(screen.getByText(/back/i)).toBeInTheDocument();
   });
 
-  it('renders RuleInputBar (method + URL + match type)', () => {
+  it('renders RequestTypeTabs for new rule', () => {
     renderEditor();
 
-    expect(screen.getByRole('group', { name: /request url configuration/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /http method/i })).toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: /url pattern/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /url match type/i })).toBeInTheDocument();
-  });
-
-  it('renders response section with status and body labels', () => {
-    renderEditor();
-
-    expect(screen.getByText(/status code/i)).toBeInTheDocument();
-    expect(screen.getByText(/response type/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/response body/i)).toBeInTheDocument();
-  });
-
-  it('renders organization section', () => {
-    renderEditor();
-
-    expect(screen.getByText('Organization')).toBeInTheDocument();
+    expect(screen.getByRole('tablist', { name: /filter by request type/i })).toBeInTheDocument();
   });
 
   it('renders Cancel and Create Rule buttons', () => {
@@ -90,10 +70,57 @@ describe('RuleEditorPage — layout', () => {
     expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /create rule/i })).toBeInTheDocument();
   });
+
+  it('renders Organization section', () => {
+    renderEditor();
+
+    expect(screen.getByText('Organization')).toBeInTheDocument();
+  });
 });
 
-describe('RuleEditorPage — create flow', () => {
-  it('creates rule with entered values', async () => {
+describe('RuleEditorPage — tab switching', () => {
+  it('shows HTTP editor by default', () => {
+    renderEditor();
+
+    expect(screen.getByRole('button', { name: /http method/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/response body/i)).toBeInTheDocument();
+  });
+
+  it('switches to WebSocket editor when WebSocket tab is clicked', async () => {
+    const user = userEvent.setup();
+    renderEditor();
+
+    await user.click(screen.getByRole('tab', { name: /websocket/i }));
+
+    expect(screen.getByText('WS')).toBeInTheDocument();
+    expect(screen.getByText(/websocket mock/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /http method/i })).not.toBeInTheDocument();
+  });
+
+  it('switches to GraphQL editor when GraphQL tab is clicked', async () => {
+    const user = userEvent.setup();
+    renderEditor();
+
+    await user.click(screen.getByRole('tab', { name: /graphql/i }));
+
+    expect(screen.getByText(/graphql operation/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /http method/i })).toHaveTextContent('POST');
+  });
+
+  it('switches back to HTTP editor when HTTP tab is clicked', async () => {
+    const user = userEvent.setup();
+    renderEditor();
+
+    await user.click(screen.getByRole('tab', { name: /websocket/i }));
+    await user.click(screen.getByRole('tab', { name: /http/i }));
+
+    expect(screen.getByRole('button', { name: /http method/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/response body/i)).toBeInTheDocument();
+  });
+});
+
+describe('RuleEditorPage — create HTTP rule', () => {
+  it('creates HTTP rule with entered values', async () => {
     const user = userEvent.setup();
     renderEditor();
 
@@ -104,7 +131,7 @@ describe('RuleEditorPage — create flow', () => {
       expect.objectContaining({
         urlPattern: '/api/users',
         method: 'GET',
-        urlMatchType: 'wildcard',
+        requestType: 'http',
         statusCode: 200,
       }),
     );
@@ -125,49 +152,47 @@ describe('RuleEditorPage — create flow', () => {
 
     expect(screen.getByRole('button', { name: /create rule/i })).toBeDisabled();
   });
+});
 
-  it('changes method via RuleInputBar', async () => {
+describe('RuleEditorPage — create WebSocket rule', () => {
+  it('creates WebSocket rule', async () => {
     const user = userEvent.setup();
     renderEditor();
 
-    await user.click(screen.getByRole('button', { name: /http method/i }));
-    await user.click(screen.getByRole('option', { name: 'POST' }));
-
-    await user.type(screen.getByRole('textbox', { name: /url pattern/i }), '/api/users');
+    await user.click(screen.getByRole('tab', { name: /websocket/i }));
+    await user.type(screen.getByRole('textbox', { name: /url pattern/i }), 'wss://api.example.com/ws');
     await user.click(screen.getByRole('button', { name: /create rule/i }));
 
     expect(mockCreateRule).toHaveBeenCalledWith(
-      expect.objectContaining({ method: 'POST' }),
-    );
-  });
-
-  it('changes match type via RuleInputBar', async () => {
-    const user = userEvent.setup();
-    renderEditor();
-
-    await user.click(screen.getByRole('button', { name: /url match type/i }));
-    await user.click(screen.getByRole('option', { name: /regex/i }));
-
-    await user.type(screen.getByRole('textbox', { name: /url pattern/i }), '/api/.*');
-    await user.click(screen.getByRole('button', { name: /create rule/i }));
-
-    expect(mockCreateRule).toHaveBeenCalledWith(
-      expect.objectContaining({ urlMatchType: 'regex' }),
+      expect.objectContaining({
+        requestType: 'websocket',
+        urlPattern: 'wss://api.example.com/ws',
+      }),
     );
   });
 });
 
-describe('RuleEditorPage — response body validation', () => {
-  it('shows error for invalid JSON in body', async () => {
+describe('RuleEditorPage — create GraphQL rule', () => {
+  it('creates GraphQL rule with default POST method', async () => {
     const user = userEvent.setup();
     renderEditor();
 
-    await user.type(screen.getByRole('textbox', { name: /url pattern/i }), '/api/test');
-    await user.type(screen.getByLabelText(/response body/i), '{{}bad json');
+    await user.click(screen.getByRole('tab', { name: /graphql/i }));
+
+    // URL defaults to /graphql, just add operation
+    const inputs = screen.getAllByRole('textbox');
+    const gqlInput = inputs.find((el) => el.getAttribute('placeholder')?.includes('GetUsers'));
+    await user.type(gqlInput!, 'GetUsers');
+
     await user.click(screen.getByRole('button', { name: /create rule/i }));
 
-    expect(screen.getByText('Invalid JSON')).toBeInTheDocument();
-    expect(mockCreateRule).not.toHaveBeenCalled();
+    expect(mockCreateRule).toHaveBeenCalledWith(
+      expect.objectContaining({
+        requestType: 'http',
+        method: 'POST',
+        graphqlOperation: 'GetUsers',
+      }),
+    );
   });
 });
 
