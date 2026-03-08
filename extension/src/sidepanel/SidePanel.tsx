@@ -1,6 +1,7 @@
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@/ui/theme/ThemeProvider';
 import { Navigation } from './components/Navigation';
+import { AccountButton } from './components/AccountButton';
 import { WorkspacePage } from './pages/WorkspacePage';
 import { RuleEditorPage } from './pages/RuleEditorPage';
 import { RequestLogPage } from './pages/RequestLogPage';
@@ -23,6 +24,9 @@ export function SidePanel() {
               <Route path="/recording" element={<RecordingPage />} />
             </Routes>
           </main>
+          <div className="border-t border-border-primary px-md py-sm">
+            <AccountButton />
+          </div>
         </div>
       </MemoryRouter>
     </ThemeProvider>
