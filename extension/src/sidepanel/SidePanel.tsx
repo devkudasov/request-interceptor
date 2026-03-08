@@ -1,18 +1,28 @@
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { ThemeProvider } from '@/ui/theme/ThemeProvider';
+import { Navigation } from './components/Navigation';
+import { RulesPage } from './pages/RulesPage';
+import { RuleEditorPage } from './pages/RuleEditorPage';
+import { CollectionsPage } from './pages/CollectionsPage';
+import { RequestLogPage } from './pages/RequestLogPage';
+
 export function SidePanel() {
   return (
-    <div className="min-h-screen bg-surface-primary text-content-primary p-lg">
-      <header className="mb-lg">
-        <h1 className="text-xl font-semibold">Request Interceptor</h1>
-      </header>
-      <nav className="flex gap-sm mb-lg border-b border-border pb-sm">
-        <button className="text-base text-primary font-semibold">Rules</button>
-        <button className="text-base text-content-secondary">Collections</button>
-        <button className="text-base text-content-secondary">Log</button>
-        <button className="text-base text-content-secondary">Record</button>
-      </nav>
-      <p className="text-content-secondary text-base">
-        Editor is loading...
-      </p>
-    </div>
+    <ThemeProvider>
+      <MemoryRouter>
+        <div className="min-h-screen bg-surface-primary text-content-primary flex flex-col">
+          <Navigation />
+          <main className="flex-1 overflow-y-auto p-md">
+            <Routes>
+              <Route path="/" element={<RulesPage />} />
+              <Route path="/rules/new" element={<RuleEditorPage />} />
+              <Route path="/rules/:id/edit" element={<RuleEditorPage />} />
+              <Route path="/collections" element={<CollectionsPage />} />
+              <Route path="/log" element={<RequestLogPage />} />
+            </Routes>
+          </main>
+        </div>
+      </MemoryRouter>
+    </ThemeProvider>
   );
 }
