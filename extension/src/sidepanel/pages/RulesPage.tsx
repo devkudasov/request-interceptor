@@ -1,12 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRulesStore, useCollectionsStore } from '@/shared/store';
 import { RuleCard } from '../components/RuleCard';
+import { RequestTypeTabs } from '../components/workspace/RequestTypeTabs';
+import type { RequestTypeTab } from '../components/workspace/RequestTypeTabs';
 import { Button } from '@/ui/common/Button';
 import { Input } from '@/ui/common/Input';
 import { Select } from '@/ui/common/Select';
 import { Spinner } from '@/ui/common/Spinner';
-
+import type { MockRule } from '@/shared/types';
 
 const METHOD_OPTIONS = [
   { value: 'ALL', label: 'All Methods' },
@@ -17,21 +19,40 @@ const METHOD_OPTIONS = [
   { value: 'DELETE', label: 'DELETE' },
 ];
 
+function getRequestTypeTab(rule: MockRule): RequestTypeTab {
+  if (rule.requestType === 'websocket') return 'websocket';
+  if (rule.requestType === 'http' && rule.graphqlOperation) return 'graphql';
+  return 'http';
+}
+
 export function RulesPage() {
   const navigate = useNavigate();
   const { rules, loading, fetchRules, toggleRule, deleteRule } = useRulesStore();
   const { collections, fetchCollections } = useCollectionsStore();
   const [urlFilter, setUrlFilter] = useState('');
   const [methodFilter, setMethodFilter] = useState('ALL');
+  const [activeTab, setActiveTab] = useState<RequestTypeTab>('http');
 
   useEffect(() => {
     fetchRules();
     fetchCollections();
   }, [fetchRules, fetchCollections]);
 
+  const counts = useMemo(() => {
+    const result = { http: 0, websocket: 0, graphql: 0 };
+    for (const rule of rules) {
+      result[getRequestTypeTab(rule)]++;
+    }
+    return result;
+  }, [rules]);
+
   const filtered = rules.filter((r) => {
+    // Filter by request type tab
+    if (getRequestTypeTab(r) !== activeTab) return false;
+    // Filter by URL
     if (urlFilter && !r.urlPattern.toLowerCase().includes(urlFilter.toLowerCase())) return false;
-    if (methodFilter !== 'ALL' && r.method !== methodFilter && r.method !== 'ANY') return false;
+    // Filter by method (only for HTTP/GraphQL)
+    if (activeTab !== 'websocket' && methodFilter !== 'ALL' && r.method !== methodFilter && r.method !== 'ANY') return false;
     return true;
   });
 
@@ -59,6 +80,8 @@ export function RulesPage() {
         </Button>
       </div>
 
+      <RequestTypeTabs active={activeTab} onChange={setActiveTab} counts={counts} />
+
       {rules.length > 0 && (
         <div className="flex gap-sm">
           <div className="flex-1">
@@ -68,11 +91,13 @@ export function RulesPage() {
               onChange={(e) => setUrlFilter(e.target.value)}
             />
           </div>
-          <Select
-            options={METHOD_OPTIONS}
-            value={methodFilter}
-            onChange={setMethodFilter}
-          />
+          {activeTab !== 'websocket' && (
+            <Select
+              options={METHOD_OPTIONS}
+              value={methodFilter}
+              onChange={setMethodFilter}
+            />
+          )}
         </div>
       )}
 
@@ -86,7 +111,7 @@ export function RulesPage() {
 
       {filtered.length === 0 && rules.length > 0 && (
         <p className="text-center py-lg text-content-secondary text-base">
-          No rules match your filter.
+          No {activeTab === 'http' ? 'HTTP' : activeTab === 'websocket' ? 'WebSocket' : 'GraphQL'} rules match your filter.
         </p>
       )}
 
