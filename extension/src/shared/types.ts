@@ -4,7 +4,17 @@ export type ResponseType = 'json' | 'raw' | 'multipart';
 export type RequestType = 'http' | 'websocket';
 export type Theme = 'light' | 'dark' | 'system';
 export type UserPlan = 'free' | 'premium' | 'team';
+export type AuthPlan = 'free' | 'pro' | 'team';
 export type TeamRole = 'owner' | 'admin' | 'member';
+
+export interface AuthUser {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  emailVerified: boolean;
+  plan: AuthPlan;
+}
 
 export interface MockRule {
   id: string;

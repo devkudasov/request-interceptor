@@ -5,6 +5,7 @@ const tabs = [
   { path: '/collections', label: 'Collections' },
   { path: '/log', label: 'Log' },
   { path: '/recording', label: 'Record' },
+  { path: '/account', label: 'Account' },
 ];
 
 export function Navigation() {
