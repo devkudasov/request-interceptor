@@ -3,6 +3,14 @@ import { getStorage, setStorage, updateStorage } from './storage';
 import { addLogEntry, clearLog as clearLogEntries } from './logger';
 import { startRecording, stopRecording, addRecordedResponse, getRecordedResponses, isRecording, getRecordingTabId } from './recorder';
 import type { MockRule, Collection, LogEntry } from '@/shared/types';
+import {
+  signInWithEmail,
+  registerWithEmail,
+  signInWithGoogle,
+  signInWithGithub,
+  signOut,
+  getCurrentUser,
+} from './firebase-auth';
 
 type MessageType = (typeof MESSAGE_TYPES)[keyof typeof MESSAGE_TYPES];
 
@@ -194,6 +202,33 @@ function registerHandlers() {
 
   registerHandler(MESSAGE_TYPES.RECORDING_DATA, async () => {
     return getRecordedResponses();
+  });
+
+  // --- Auth ---
+  registerHandler(MESSAGE_TYPES.LOGIN, async (payload) => {
+    const { email, password } = payload as { email: string; password: string };
+    return signInWithEmail(email, password);
+  });
+
+  registerHandler(MESSAGE_TYPES.REGISTER, async (payload) => {
+    const { email, password } = payload as { email: string; password: string };
+    return registerWithEmail(email, password);
+  });
+
+  registerHandler(MESSAGE_TYPES.LOGIN_GOOGLE, async () => {
+    return signInWithGoogle();
+  });
+
+  registerHandler(MESSAGE_TYPES.LOGIN_GITHUB, async () => {
+    return signInWithGithub();
+  });
+
+  registerHandler(MESSAGE_TYPES.LOGOUT, async () => {
+    await signOut();
+  });
+
+  registerHandler(MESSAGE_TYPES.GET_CURRENT_USER, async () => {
+    return getCurrentUser();
   });
 }
 

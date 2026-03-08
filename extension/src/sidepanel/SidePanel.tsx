@@ -6,6 +6,7 @@ import { RuleEditorPage } from './pages/RuleEditorPage';
 import { CollectionsPage } from './pages/CollectionsPage';
 import { RequestLogPage } from './pages/RequestLogPage';
 import { RecordingPage } from './pages/RecordingPage';
+import { AccountPage } from './pages/AccountPage';
 
 export function SidePanel() {
   return (
@@ -21,6 +22,7 @@ export function SidePanel() {
               <Route path="/collections" element={<CollectionsPage />} />
               <Route path="/log" element={<RequestLogPage />} />
               <Route path="/recording" element={<RecordingPage />} />
+              <Route path="/account" element={<AccountPage />} />
             </Routes>
           </main>
         </div>

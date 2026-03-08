@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { MockRule, Collection, LogEntry, Settings, Theme } from './types';
+import type { MockRule, Collection, LogEntry, Settings, Theme, AuthUser } from './types';
 import { DEFAULT_SETTINGS, MESSAGE_TYPES } from './constants';
 import { v4 as uuid } from 'uuid';
 
@@ -215,6 +215,88 @@ export const useTabsStore = create<TabsState>((set) => ({
         : s.activeTabIds.filter((id) => id !== tabId),
     }));
   },
+}));
+
+// --- Auth Store ---
+interface AuthState {
+  user: AuthUser | null;
+  loading: boolean;
+  error: string | null;
+  login: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
+  loginWithGithub: () => Promise<void>;
+  logout: () => Promise<void>;
+  fetchUser: () => Promise<void>;
+  clearError: () => void;
+}
+
+export const useAuthStore = create<AuthState>((set) => ({
+  user: null,
+  loading: false,
+  error: null,
+
+  login: async (email, password) => {
+    set({ loading: true, error: null });
+    try {
+      const user = await sendMessage<AuthUser>(MESSAGE_TYPES.LOGIN, { email, password });
+      set({ user, loading: false });
+    } catch (err) {
+      set({ loading: false, error: (err as Error).message });
+    }
+  },
+
+  register: async (email, password) => {
+    set({ loading: true, error: null });
+    try {
+      const user = await sendMessage<AuthUser>(MESSAGE_TYPES.REGISTER, { email, password });
+      set({ user, loading: false });
+    } catch (err) {
+      set({ loading: false, error: (err as Error).message });
+    }
+  },
+
+  loginWithGoogle: async () => {
+    set({ loading: true, error: null });
+    try {
+      const user = await sendMessage<AuthUser>(MESSAGE_TYPES.LOGIN_GOOGLE);
+      set({ user, loading: false });
+    } catch (err) {
+      set({ loading: false, error: (err as Error).message });
+    }
+  },
+
+  loginWithGithub: async () => {
+    set({ loading: true, error: null });
+    try {
+      const user = await sendMessage<AuthUser>(MESSAGE_TYPES.LOGIN_GITHUB);
+      set({ user, loading: false });
+    } catch (err) {
+      set({ loading: false, error: (err as Error).message });
+    }
+  },
+
+  logout: async () => {
+    set({ loading: true, error: null });
+    try {
+      await sendMessage(MESSAGE_TYPES.LOGOUT);
+      set({ user: null, loading: false });
+    } catch (err) {
+      set({ loading: false, error: (err as Error).message });
+    }
+  },
+
+  fetchUser: async () => {
+    set({ loading: true });
+    try {
+      const user = await sendMessage<AuthUser | null>(MESSAGE_TYPES.GET_CURRENT_USER);
+      set({ user, loading: false });
+    } catch {
+      set({ user: null, loading: false });
+    }
+  },
+
+  clearError: () => set({ error: null }),
 }));
 
 // --- Log Store ---

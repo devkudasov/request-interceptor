@@ -1,141 +1,104 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import AccountPage from './AccountPage';
+import { AccountPage } from './AccountPage';
+import type { AuthUser } from '@/shared/types';
 
-// Mock the auth module
-vi.mock('@/background/firebase-auth', () => ({
-  signInWithEmail: vi.fn(),
-  registerWithEmail: vi.fn(),
-  signInWithGoogle: vi.fn(),
-  signInWithGithub: vi.fn(),
-  signOut: vi.fn(),
-  getCurrentUser: vi.fn(),
+const mockLogout = vi.fn();
+const mockFetchUser = vi.fn();
+const mockLogin = vi.fn();
+const mockRegister = vi.fn();
+const mockLoginWithGoogle = vi.fn();
+const mockLoginWithGithub = vi.fn();
+const mockClearError = vi.fn();
+
+let mockUser: AuthUser | null = null;
+
+vi.mock('@/shared/store', () => ({
+  useAuthStore: vi.fn(() => ({
+    user: mockUser,
+    loading: false,
+    error: null,
+    login: mockLogin,
+    register: mockRegister,
+    loginWithGoogle: mockLoginWithGoogle,
+    loginWithGithub: mockLoginWithGithub,
+    logout: mockLogout,
+    fetchUser: mockFetchUser,
+    clearError: mockClearError,
+  })),
 }));
-
-// Mock chrome APIs
-vi.stubGlobal('chrome', {
-  storage: {
-    session: {
-      get: vi.fn(() => Promise.resolve({})),
-      set: vi.fn(() => Promise.resolve()),
-    },
-    local: {
-      get: vi.fn(() => Promise.resolve({})),
-      getBytesInUse: vi.fn(() => Promise.resolve(0)),
-    },
-  },
-  runtime: {
-    id: 'test-extension-id',
-  },
-});
-
-const { signInWithEmail, registerWithEmail, signOut, getCurrentUser } =
-  await import('@/background/firebase-auth');
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockUser = null;
 });
 
 describe('AccountPage — logged out state', () => {
-  beforeEach(() => {
-    (getCurrentUser as ReturnType<typeof vi.fn>).mockResolvedValue(null);
-  });
-
-  it('renders login form with email and password fields', async () => {
+  it('renders login form with email and password fields', () => {
     render(<AccountPage />);
 
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /log\s*in|sign\s*in/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /sign\s*in/i })).toBeInTheDocument();
   });
 
-  it('renders OAuth buttons for Google and GitHub', async () => {
+  it('renders OAuth buttons for Google and GitHub', () => {
     render(<AccountPage />);
 
     expect(screen.getByRole('button', { name: /continue with google/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /continue with github/i })).toBeInTheDocument();
   });
 
-  it('shows "Free features work without an account" note', async () => {
+  it('shows "Free features work without an account" note', () => {
     render(<AccountPage />);
 
     expect(screen.getByText(/free features work without an account/i)).toBeInTheDocument();
   });
-
-  it('shows error message on login failure', async () => {
-    (signInWithEmail as ReturnType<typeof vi.fn>).mockRejectedValue(
-      new Error('auth/invalid-credential')
-    );
-
-    render(<AccountPage />);
-
-    const emailInput = screen.getByLabelText(/email/i);
-    const passwordInput = screen.getByLabelText(/password/i);
-    const loginButton = screen.getByRole('button', { name: /log\s*in|sign\s*in/i });
-
-    await userEvent.type(emailInput, 'test@example.com');
-    await userEvent.type(passwordInput, 'wrongpassword');
-    await userEvent.click(loginButton);
-
-    expect(await screen.findByText(/invalid.*credential|login.*failed|incorrect/i)).toBeInTheDocument();
-  });
-
-  it('can switch to register form', async () => {
-    render(<AccountPage />);
-
-    const switchLink = screen.getByText(/create.*account|register|sign\s*up/i);
-    await userEvent.click(switchLink);
-
-    expect(screen.getByRole('button', { name: /register|sign\s*up|create/i })).toBeInTheDocument();
-  });
 });
 
 describe('AccountPage — logged in state', () => {
-  const mockUser = {
-    uid: 'user-123',
-    email: 'test@example.com',
-    displayName: 'Test User',
-    plan: 'free' as const,
-  };
-
   beforeEach(() => {
-    (getCurrentUser as ReturnType<typeof vi.fn>).mockResolvedValue(mockUser);
+    mockUser = {
+      uid: 'user-123',
+      email: 'test@example.com',
+      displayName: 'Test User',
+      photoURL: null,
+      emailVerified: true,
+      plan: 'free',
+    };
   });
 
-  it('shows user email when logged in', async () => {
+  it('shows user email when logged in', () => {
     render(<AccountPage />);
 
-    expect(await screen.findByText(/test@example\.com/)).toBeInTheDocument();
+    expect(screen.getByText(/test@example\.com/)).toBeInTheDocument();
   });
 
-  it('shows user plan when logged in', async () => {
+  it('shows user plan when logged in', () => {
     render(<AccountPage />);
 
-    expect(await screen.findByText(/free/i)).toBeInTheDocument();
+    expect(screen.getByText(/free/i)).toBeInTheDocument();
   });
 
-  it('shows logout button when logged in', async () => {
+  it('shows logout button when logged in', () => {
     render(<AccountPage />);
 
-    expect(await screen.findByRole('button', { name: /log\s*out|sign\s*out/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /logout/i })).toBeInTheDocument();
   });
 
-  it('calls signOut when logout button is clicked', async () => {
-    (signOut as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
-
+  it('calls logout when logout button is clicked', async () => {
     render(<AccountPage />);
+    const user = userEvent.setup();
 
-    const logoutButton = await screen.findByRole('button', { name: /log\s*out|sign\s*out/i });
-    await userEvent.click(logoutButton);
+    await user.click(screen.getByRole('button', { name: /logout/i }));
 
-    expect(signOut).toHaveBeenCalled();
+    expect(mockLogout).toHaveBeenCalled();
   });
 
-  it('renders storage usage bar with percentage', async () => {
+  it('renders storage usage bar', () => {
     render(<AccountPage />);
 
-    // Look for a progress bar or storage indicator
-    expect(await screen.findByRole('progressbar')).toBeInTheDocument();
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
 });

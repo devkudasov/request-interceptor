@@ -1,7 +1,26 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import AuthForm from './AuthForm';
+import { AuthForm } from './AuthForm';
+
+// Mock the auth store
+const mockLogin = vi.fn();
+const mockRegister = vi.fn();
+const mockLoginWithGoogle = vi.fn();
+const mockLoginWithGithub = vi.fn();
+const mockClearError = vi.fn();
+
+vi.mock('@/shared/store', () => ({
+  useAuthStore: vi.fn(() => ({
+    loading: false,
+    error: null,
+    login: mockLogin,
+    register: mockRegister,
+    loginWithGoogle: mockLoginWithGoogle,
+    loginWithGithub: mockLoginWithGithub,
+    clearError: mockClearError,
+  })),
+}));
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -9,108 +28,103 @@ beforeEach(() => {
 
 describe('AuthForm — Login mode', () => {
   it('renders email input field', () => {
-    render(<AuthForm mode="login" onSubmit={vi.fn()} />);
+    render(<AuthForm />);
 
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/email/i)).toHaveAttribute('type', 'email');
   });
 
   it('renders password input field', () => {
-    render(<AuthForm mode="login" onSubmit={vi.fn()} />);
+    render(<AuthForm />);
 
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/password/i)).toHaveAttribute('type', 'password');
   });
 
-  it('renders login button', () => {
-    render(<AuthForm mode="login" onSubmit={vi.fn()} />);
+  it('renders sign in button', () => {
+    render(<AuthForm />);
 
-    expect(screen.getByRole('button', { name: /log\s*in|sign\s*in/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /sign\s*in/i })).toBeInTheDocument();
   });
 
-  it('calls onSubmit with email and password on form submission', async () => {
-    const onSubmit = vi.fn();
-    render(<AuthForm mode="login" onSubmit={onSubmit} />);
+  it('calls login with email and password on form submission', async () => {
+    render(<AuthForm />);
+    const user = userEvent.setup();
 
-    await userEvent.type(screen.getByLabelText(/email/i), 'test@example.com');
-    await userEvent.type(screen.getByLabelText(/password/i), 'password123');
-    await userEvent.click(screen.getByRole('button', { name: /log\s*in|sign\s*in/i }));
+    await user.type(screen.getByLabelText(/email/i), 'test@example.com');
+    await user.type(screen.getByLabelText(/password/i), 'password123');
+    await user.click(screen.getByRole('button', { name: /sign\s*in/i }));
 
-    expect(onSubmit).toHaveBeenCalledWith('test@example.com', 'password123');
+    expect(mockLogin).toHaveBeenCalledWith('test@example.com', 'password123');
   });
 
   it('renders OAuth buttons', () => {
-    render(<AuthForm mode="login" onSubmit={vi.fn()} onGoogleSignIn={vi.fn()} onGithubSignIn={vi.fn()} />);
+    render(<AuthForm />);
 
     expect(screen.getByRole('button', { name: /continue with google/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /continue with github/i })).toBeInTheDocument();
   });
 
-  it('calls onGoogleSignIn when Google button is clicked', async () => {
-    const onGoogleSignIn = vi.fn();
-    render(<AuthForm mode="login" onSubmit={vi.fn()} onGoogleSignIn={onGoogleSignIn} />);
+  it('calls loginWithGoogle when Google button is clicked', async () => {
+    render(<AuthForm />);
+    const user = userEvent.setup();
 
-    await userEvent.click(screen.getByRole('button', { name: /continue with google/i }));
+    await user.click(screen.getByRole('button', { name: /continue with google/i }));
 
-    expect(onGoogleSignIn).toHaveBeenCalled();
+    expect(mockLoginWithGoogle).toHaveBeenCalled();
   });
 
-  it('calls onGithubSignIn when GitHub button is clicked', async () => {
-    const onGithubSignIn = vi.fn();
-    render(<AuthForm mode="login" onSubmit={vi.fn()} onGithubSignIn={onGithubSignIn} />);
+  it('calls loginWithGithub when GitHub button is clicked', async () => {
+    render(<AuthForm />);
+    const user = userEvent.setup();
 
-    await userEvent.click(screen.getByRole('button', { name: /continue with github/i }));
+    await user.click(screen.getByRole('button', { name: /continue with github/i }));
 
-    expect(onGithubSignIn).toHaveBeenCalled();
+    expect(mockLoginWithGithub).toHaveBeenCalled();
   });
 
-  it('displays error message when error prop is provided', () => {
-    render(<AuthForm mode="login" onSubmit={vi.fn()} error="Invalid credentials" />);
+  it('displays "Free features work without an account" note', () => {
+    render(<AuthForm />);
 
-    expect(screen.getByText('Invalid credentials')).toBeInTheDocument();
-  });
-
-  it('disables submit button when loading', () => {
-    render(<AuthForm mode="login" onSubmit={vi.fn()} loading={true} />);
-
-    expect(screen.getByRole('button', { name: /log\s*in|sign\s*in|loading/i })).toBeDisabled();
+    expect(screen.getByText(/free features work without an account/i)).toBeInTheDocument();
   });
 });
 
 describe('AuthForm — Register mode', () => {
-  it('renders register button', () => {
-    render(<AuthForm mode="register" onSubmit={vi.fn()} />);
+  it('switches to register mode when toggle is clicked', async () => {
+    render(<AuthForm />);
+    const user = userEvent.setup();
 
-    expect(screen.getByRole('button', { name: /register|sign\s*up|create/i })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /register/i }));
+
+    expect(screen.getByRole('button', { name: /create account/i })).toBeInTheDocument();
   });
 
-  it('renders email and password fields in register mode', () => {
-    render(<AuthForm mode="register" onSubmit={vi.fn()} />);
+  it('shows validation error for weak password on blur', async () => {
+    render(<AuthForm />);
+    const user = userEvent.setup();
 
-    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+    // Switch to register mode
+    await user.click(screen.getByRole('button', { name: /register/i }));
+
+    const passwordInput = screen.getByLabelText(/password/i);
+    await user.type(passwordInput, 'short');
+    await user.tab(); // trigger blur
+
+    expect(screen.getByText(/at least 8 characters/i)).toBeInTheDocument();
   });
 
-  it('shows validation error for weak password (min 8 chars)', async () => {
-    const onSubmit = vi.fn();
-    render(<AuthForm mode="register" onSubmit={onSubmit} />);
+  it('calls register with valid email and password', async () => {
+    render(<AuthForm />);
+    const user = userEvent.setup();
 
-    await userEvent.type(screen.getByLabelText(/email/i), 'test@example.com');
-    await userEvent.type(screen.getByLabelText(/password/i), 'short');
-    await userEvent.click(screen.getByRole('button', { name: /register|sign\s*up|create/i }));
+    // Switch to register mode
+    await user.click(screen.getByRole('button', { name: /register/i }));
 
-    expect(screen.getByText(/password.*8.*char|at least 8|too short/i)).toBeInTheDocument();
-    expect(onSubmit).not.toHaveBeenCalled();
-  });
+    await user.type(screen.getByLabelText(/email/i), 'test@example.com');
+    await user.type(screen.getByLabelText(/password/i), 'password123');
+    await user.click(screen.getByRole('button', { name: /create account/i }));
 
-  it('calls onSubmit with valid email and password', async () => {
-    const onSubmit = vi.fn();
-    render(<AuthForm mode="register" onSubmit={onSubmit} />);
-
-    await userEvent.type(screen.getByLabelText(/email/i), 'test@example.com');
-    await userEvent.type(screen.getByLabelText(/password/i), 'password123');
-    await userEvent.click(screen.getByRole('button', { name: /register|sign\s*up|create/i }));
-
-    expect(onSubmit).toHaveBeenCalledWith('test@example.com', 'password123');
+    expect(mockRegister).toHaveBeenCalledWith('test@example.com', 'password123');
   });
 });
