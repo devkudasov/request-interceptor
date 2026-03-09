@@ -4,7 +4,7 @@ import { StorageBar } from './StorageBar';
 import { Badge } from '@/ui/common/Badge';
 import { Button } from '@/ui/common/Button';
 import {
-  PLAN_QUOTAS,
+  PLAN_LIMITS,
   PLAN_BADGE_VARIANT,
   getInitials,
 } from '@/shared/utils/account';
@@ -34,7 +34,7 @@ export function AccountPopover({ onClose }: AccountPopoverProps) {
     );
   }
 
-  const quota = PLAN_QUOTAS[user.plan];
+  const quota = PLAN_LIMITS[user.plan].storageBytes;
   const used = 0;
 
   return (

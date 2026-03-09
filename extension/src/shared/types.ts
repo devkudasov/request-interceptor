@@ -7,6 +7,18 @@ export type UserPlan = 'free' | 'premium' | 'team';
 export type AuthPlan = 'free' | 'pro' | 'team';
 export type TeamRole = 'owner' | 'admin' | 'member';
 
+export interface PlanLimits {
+  maxRules: number;
+  maxCollections: number;
+  maxTeamMembers: number;
+  cloudSync: boolean;
+  versionHistory: boolean;
+  importExport: boolean;
+  storageBytes: number;
+}
+
+export type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'incomplete';
+
 export interface AuthUser {
   uid: string;
   email: string | null;
@@ -14,6 +26,9 @@ export interface AuthUser {
   photoURL: string | null;
   emailVerified: boolean;
   plan: AuthPlan;
+  subscriptionStatus?: SubscriptionStatus | null;
+  currentPeriodEnd?: string | null;
+  cancelAtPeriodEnd?: boolean;
 }
 
 export interface MockRule {

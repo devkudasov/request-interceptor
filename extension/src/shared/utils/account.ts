@@ -1,9 +1,33 @@
-import type { AuthPlan } from '@/shared/types';
+import type { AuthPlan, PlanLimits } from '@/shared/types';
 
-export const PLAN_QUOTAS: Record<AuthPlan, number> = {
-  free: 5 * 1024 * 1024, // 5 MB
-  pro: 50 * 1024 * 1024, // 50 MB
-  team: 500 * 1024 * 1024, // 500 MB
+export const PLAN_LIMITS: Record<AuthPlan, PlanLimits> = {
+  free: {
+    maxRules: 10,
+    maxCollections: 3,
+    maxTeamMembers: 0,
+    cloudSync: false,
+    versionHistory: false,
+    importExport: true,
+    storageBytes: 5 * 1024 * 1024,
+  },
+  pro: {
+    maxRules: 100,
+    maxCollections: 20,
+    maxTeamMembers: 0,
+    cloudSync: true,
+    versionHistory: true,
+    importExport: true,
+    storageBytes: 50 * 1024 * 1024,
+  },
+  team: {
+    maxRules: Infinity,
+    maxCollections: Infinity,
+    maxTeamMembers: 10,
+    cloudSync: true,
+    versionHistory: true,
+    importExport: true,
+    storageBytes: 500 * 1024 * 1024,
+  },
 };
 
 export const PLAN_BADGE_VARIANT: Record<AuthPlan, 'default' | 'success' | 'info'> = {
