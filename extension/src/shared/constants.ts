@@ -104,5 +104,10 @@ export const STORAGE_KEYS = {
   USER_ID: 'userId',
 } as const;
 
+export const BILLING_MESSAGES = {
+  CREATE_CHECKOUT_SESSION: 'CREATE_CHECKOUT_SESSION',
+  CREATE_CUSTOMER_PORTAL_SESSION: 'CREATE_CUSTOMER_PORTAL_SESSION',
+} as const;
+
 // Unique prefix for window.postMessage to avoid conflicts with page scripts
 export const MESSAGE_PREFIX = '__REQ_INTERCEPTOR__';
