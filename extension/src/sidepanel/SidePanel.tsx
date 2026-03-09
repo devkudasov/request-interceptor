@@ -6,6 +6,7 @@ import { LogPanel } from './components/log/LogPanel';
 import { WorkspacePage } from './pages/WorkspacePage';
 import { RuleEditorPage } from './pages/RuleEditorPage';
 import { VersionHistoryPage } from './pages/VersionHistoryPage';
+import { BillingPage } from './pages/BillingPage';
 
 export function SidePanel() {
   const { isOpen, togglePanel, unseenCount } = useLogPanelStore();
@@ -20,6 +21,7 @@ export function SidePanel() {
               <Route path="/rules/new" element={<RuleEditorPage />} />
               <Route path="/rules/:id/edit" element={<RuleEditorPage />} />
               <Route path="/collections/:id/versions" element={<VersionHistoryPage />} />
+              <Route path="/billing" element={<BillingPage />} />
             </Routes>
           </main>
           <LogPanel isOpen={isOpen} onClose={togglePanel} />
