@@ -1,6 +1,8 @@
 import { Button } from '@/ui/common/Button';
 import { Input } from '@/ui/common/Input';
 import { Select } from '@/ui/common/Select';
+import { RecordButton } from './RecordButton';
+import { ToolbarOverflowMenu } from './ToolbarOverflowMenu';
 
 const METHOD_OPTIONS = [
   { value: 'ALL', label: 'All Methods' },
@@ -21,6 +23,9 @@ interface WorkspaceToolbarProps {
   onImport: () => void;
   onExport: () => void;
   hasCollections: boolean;
+  isRecording: boolean;
+  onRecordClick: () => void;
+  onStopClick: () => void;
 }
 
 export function WorkspaceToolbar({
@@ -33,6 +38,9 @@ export function WorkspaceToolbar({
   onImport,
   onExport,
   hasCollections,
+  isRecording,
+  onRecordClick,
+  onStopClick,
 }: WorkspaceToolbarProps) {
   return (
     <div className="flex flex-col gap-sm">
@@ -50,12 +58,16 @@ export function WorkspaceToolbar({
           onChange={onMethodFilterChange}
         />
       </div>
-      <div className="flex gap-xs">
+      <div className="flex gap-xs items-center">
         <Button size="sm" onClick={onNewRule}>+ New Rule</Button>
-        <Button size="sm" variant="secondary" onClick={onNewCollection}>+ New Collection</Button>
+        <RecordButton isRecording={isRecording} onRecordClick={onRecordClick} onStopClick={onStopClick} />
         <div className="flex-1" />
-        <Button size="sm" variant="ghost" onClick={onImport}>Import</Button>
-        <Button size="sm" variant="ghost" onClick={onExport} disabled={!hasCollections}>Export</Button>
+        <ToolbarOverflowMenu
+          onNewCollection={onNewCollection}
+          onImport={onImport}
+          onExport={onExport}
+          hasCollections={hasCollections}
+        />
       </div>
     </div>
   );

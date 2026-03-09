@@ -3,29 +3,41 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { WorkspaceEmptyState } from './WorkspaceEmptyState';
 
+const defaultProps = {
+  onCreateRule: vi.fn(),
+  onCreateCollection: vi.fn(),
+  onRecord: vi.fn(),
+};
+
 describe('WorkspaceEmptyState', () => {
   it('renders empty state message', () => {
-    render(<WorkspaceEmptyState onCreateRule={vi.fn()} onCreateCollection={vi.fn()} />);
+    render(<WorkspaceEmptyState {...defaultProps} />);
 
     expect(screen.getByText(/no mock rules/i)).toBeInTheDocument();
   });
 
   it('renders Create Rule button', () => {
-    render(<WorkspaceEmptyState onCreateRule={vi.fn()} onCreateCollection={vi.fn()} />);
+    render(<WorkspaceEmptyState {...defaultProps} />);
 
     expect(screen.getByRole('button', { name: /create rule/i })).toBeInTheDocument();
   });
 
   it('renders Create Collection button', () => {
-    render(<WorkspaceEmptyState onCreateRule={vi.fn()} onCreateCollection={vi.fn()} />);
+    render(<WorkspaceEmptyState {...defaultProps} />);
 
     expect(screen.getByRole('button', { name: /create collection/i })).toBeInTheDocument();
+  });
+
+  it('renders Record CTA button', () => {
+    render(<WorkspaceEmptyState {...defaultProps} />);
+
+    expect(screen.getByRole('button', { name: /record/i })).toBeInTheDocument();
   });
 
   it('calls onCreateRule when Create Rule is clicked', async () => {
     const user = userEvent.setup();
     const onCreateRule = vi.fn();
-    render(<WorkspaceEmptyState onCreateRule={onCreateRule} onCreateCollection={vi.fn()} />);
+    render(<WorkspaceEmptyState {...defaultProps} onCreateRule={onCreateRule} />);
 
     await user.click(screen.getByRole('button', { name: /create rule/i }));
 
@@ -35,15 +47,25 @@ describe('WorkspaceEmptyState', () => {
   it('calls onCreateCollection when Create Collection is clicked', async () => {
     const user = userEvent.setup();
     const onCreateCollection = vi.fn();
-    render(<WorkspaceEmptyState onCreateRule={vi.fn()} onCreateCollection={onCreateCollection} />);
+    render(<WorkspaceEmptyState {...defaultProps} onCreateCollection={onCreateCollection} />);
 
     await user.click(screen.getByRole('button', { name: /create collection/i }));
 
     expect(onCreateCollection).toHaveBeenCalled();
   });
 
+  it('calls onRecord when Record button is clicked', async () => {
+    const user = userEvent.setup();
+    const onRecord = vi.fn();
+    render(<WorkspaceEmptyState {...defaultProps} onRecord={onRecord} />);
+
+    await user.click(screen.getByRole('button', { name: /record/i }));
+
+    expect(onRecord).toHaveBeenCalled();
+  });
+
   it('renders helpful description text', () => {
-    render(<WorkspaceEmptyState onCreateRule={vi.fn()} onCreateCollection={vi.fn()} />);
+    render(<WorkspaceEmptyState {...defaultProps} />);
 
     expect(screen.getByText(/create your first rule/i)).toBeInTheDocument();
   });

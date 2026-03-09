@@ -189,23 +189,26 @@ describe('WorkspacePage — actions', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/rules/new');
   });
 
-  it('New Collection button triggers collection creation', async () => {
+  it('New Collection is available in overflow menu', async () => {
     const user = userEvent.setup();
     renderPage();
-    await user.click(screen.getByText(/\+ new collection/i));
-    // Should open modal or call createCollection — verify it was handled
-    // The exact behavior depends on implementation; we verify the button exists and is clickable
+    await user.click(screen.getByRole('button', { name: /more actions/i }));
+    expect(screen.getByText(/new collection/i)).toBeInTheDocument();
   });
 
-  it('Export button is present', () => {
+  it('Export is available in overflow menu', async () => {
+    const user = userEvent.setup();
     storeState.collections = [collection];
     storeState.rules = [httpRule];
     renderPage();
+    await user.click(screen.getByRole('button', { name: /more actions/i }));
     expect(screen.getByText(/export/i)).toBeInTheDocument();
   });
 
-  it('Import button is present', () => {
+  it('Import is available in overflow menu', async () => {
+    const user = userEvent.setup();
     renderPage();
+    await user.click(screen.getByRole('button', { name: /more actions/i }));
     expect(screen.getByText(/import/i)).toBeInTheDocument();
   });
 });

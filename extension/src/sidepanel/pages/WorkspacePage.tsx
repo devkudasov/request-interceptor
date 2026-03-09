@@ -121,6 +121,9 @@ export function WorkspacePage() {
         onImport={handleImport}
         onExport={handleExport}
         hasCollections={collections.length > 0}
+        isRecording={false}
+        onRecordClick={() => {}}
+        onStopClick={() => {}}
       />
 
       <input
@@ -139,6 +142,7 @@ export function WorkspacePage() {
         <WorkspaceEmptyState
           onCreateRule={handleNewRule}
           onCreateCollection={() => setShowModal(true)}
+          onRecord={() => {}}
         />
       ) : (
         <>

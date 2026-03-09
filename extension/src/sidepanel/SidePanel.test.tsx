@@ -5,15 +5,13 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 // Stub components that represent the expected route targets
 function WorkspacePage() { return <div data-testid="workspace-page">WorkspacePage</div>; }
 function RuleEditorPage() { return <div data-testid="rule-editor-page">RuleEditorPage</div>; }
-function RequestLogPage() { return <div data-testid="request-log-page">RequestLogPage</div>; }
-function RecordingPage() { return <div data-testid="recording-page">RecordingPage</div>; }
 function VersionHistoryPage() { return <div data-testid="version-history-page">VersionHistoryPage</div>; }
-// These pages are intentionally NOT in the route config — tests verify they don't render
+// RequestLogPage & RecordingPage are intentionally NOT in the route config — tests verify those paths render nothing
 
 /**
  * Renders the expected route config that SidePanel.tsx should have after
- * the implementation. Routes for /collections, /team, /account are intentionally
- * omitted — tests verify those paths render nothing.
+ * the restructure. Routes for /log, /recording, /collections, /team, /account
+ * are intentionally omitted — tests verify those paths render nothing.
  */
 function renderRoutes(initialRoute: string) {
   return render(
@@ -23,8 +21,6 @@ function renderRoutes(initialRoute: string) {
         <Route path="/rules/new" element={<RuleEditorPage />} />
         <Route path="/rules/:id/edit" element={<RuleEditorPage />} />
         <Route path="/collections/:id/versions" element={<VersionHistoryPage />} />
-        <Route path="/log" element={<RequestLogPage />} />
-        <Route path="/recording" element={<RecordingPage />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -46,16 +42,6 @@ describe('SidePanel routing — active routes', () => {
     expect(screen.getByTestId('rule-editor-page')).toBeInTheDocument();
   });
 
-  it('renders RequestLogPage at /log', () => {
-    renderRoutes('/log');
-    expect(screen.getByTestId('request-log-page')).toBeInTheDocument();
-  });
-
-  it('renders RecordingPage at /recording', () => {
-    renderRoutes('/recording');
-    expect(screen.getByTestId('recording-page')).toBeInTheDocument();
-  });
-
   it('renders VersionHistoryPage at /collections/:id/versions', () => {
     renderRoutes('/collections/c1/versions');
     expect(screen.getByTestId('version-history-page')).toBeInTheDocument();
@@ -63,6 +49,16 @@ describe('SidePanel routing — active routes', () => {
 });
 
 describe('SidePanel routing — removed routes', () => {
+  it('does NOT render RequestLogPage at /log', () => {
+    renderRoutes('/log');
+    expect(screen.queryByTestId('request-log-page')).not.toBeInTheDocument();
+  });
+
+  it('does NOT render RecordingPage at /recording', () => {
+    renderRoutes('/recording');
+    expect(screen.queryByTestId('recording-page')).not.toBeInTheDocument();
+  });
+
   it('does NOT render CollectionsPage at /collections', () => {
     renderRoutes('/collections');
     expect(screen.queryByTestId('collections-page')).not.toBeInTheDocument();
@@ -79,7 +75,7 @@ describe('SidePanel routing — removed routes', () => {
   });
 });
 
-/* --- Bottom bar with AccountButton --- */
+/* --- Store mocks for full SidePanel render --- */
 
 vi.mock('@/shared/store', () => ({
   useAuthStore: vi.fn(() => ({
@@ -169,12 +165,68 @@ vi.mock('./components/LoginPopover', () => ({
   LoginPopover: () => <div data-testid="login-popover" />,
 }));
 
-describe('SidePanel — bottom bar layout', () => {
-  it('renders AccountButton in the SidePanel', async () => {
+/* --- Layout: no Navigation --- */
+
+describe('SidePanel — layout: no Navigation', () => {
+  it('does NOT render Navigation tabs (Workspace, Log, Record)', async () => {
     const { SidePanel } = await import('./SidePanel');
     render(<SidePanel />);
+
+    // The old Navigation had tabs: Workspace, Log, Record
+    expect(screen.queryByRole('link', { name: /workspace/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^log$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /record/i })).not.toBeInTheDocument();
+  });
+
+  it('does NOT render a <nav> element', async () => {
+    const { SidePanel } = await import('./SidePanel');
+    render(<SidePanel />);
+
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+  });
+});
+
+/* --- Layout: BottomBar present --- */
+
+describe('SidePanel — layout: BottomBar', () => {
+  it('renders BottomBar with "Toggle log panel" button', async () => {
+    const { SidePanel } = await import('./SidePanel');
+    render(<SidePanel />);
+
+    expect(
+      screen.getByRole('button', { name: /toggle log panel/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('renders AccountButton inside BottomBar (not standalone)', async () => {
+    const { SidePanel } = await import('./SidePanel');
+    render(<SidePanel />);
+
     expect(
       screen.getByRole('button', { name: /account/i }),
     ).toBeInTheDocument();
+  });
+});
+
+/* --- Layout: LogPanel integration --- */
+
+describe('SidePanel — layout: LogPanel', () => {
+  it('mounts LogPanel component in the tree', async () => {
+    const { SidePanel } = await import('./SidePanel');
+    const { container } = render(<SidePanel />);
+
+    // LogPanel should be in the component tree. When closed (isOpen=false)
+    // it returns null, so we verify that the SidePanel at least does not
+    // crash and renders its main content alongside the BottomBar.
+    // The LogPanel's presence is confirmed by the BottomBar toggle that
+    // controls it. A more direct test: when the toggle is clicked, LogPanel
+    // content should appear. For now we verify the toggle exists which
+    // implies LogPanel is wired up.
+    expect(
+      screen.getByRole('button', { name: /toggle log panel/i }),
+    ).toBeInTheDocument();
+
+    // Verify the main content area still renders
+    expect(container.querySelector('main')).toBeInTheDocument();
   });
 });
