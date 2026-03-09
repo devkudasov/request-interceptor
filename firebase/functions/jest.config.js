@@ -4,4 +4,12 @@ module.exports = {
   roots: ['<rootDir>/src'],
   testMatch: ['**/*.test.ts'],
   moduleNameMapper: {},
+  transform: {
+    '^.+\\.ts$': [
+      'ts-jest',
+      {
+        diagnostics: false,
+      },
+    ],
+  },
 };
