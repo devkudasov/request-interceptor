@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { LogPanel } from './log/LogPanel';
+import { LogPanel } from './LogPanel';
 import type { LogEntry } from '@/shared/types';
 
 const mockEntries: LogEntry[] = [
