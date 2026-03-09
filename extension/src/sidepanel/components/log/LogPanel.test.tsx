@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { LogPanel } from './LogPanel';
 import type { LogEntry } from '@/shared/types';
 
@@ -21,25 +20,8 @@ const mockEntries: LogEntry[] = [
     mocked: true,
     matchedRuleId: 'r1',
   },
-  {
-    id: '2',
-    timestamp: '2026-03-09T10:31:03.000Z',
-    tabId: 1,
-    method: 'POST',
-    url: 'https://api.example.com/data',
-    requestHeaders: {},
-    requestBody: '{"key":"value"}',
-    statusCode: 201,
-    responseHeaders: {},
-    responseBody: null,
-    responseSize: 256,
-    duration: 45,
-    mocked: false,
-    matchedRuleId: null,
-  },
 ];
 
-// Mock useLogStore
 const mockTogglePause = vi.fn();
 const mockClearLog = vi.fn();
 let mockPaused = false;
@@ -79,81 +61,28 @@ describe('LogPanel', () => {
     expect(screen.queryByText('GET')).not.toBeInTheDocument();
   });
 
-  it('renders log entries when open', () => {
+  it('renders toolbar and entries when open', () => {
     renderPanel({ isOpen: true });
+    expect(screen.getByText('Log')).toBeInTheDocument();
     expect(screen.getByText('GET')).toBeInTheDocument();
-    expect(screen.getByText('POST')).toBeInTheDocument();
   });
 
-  it('renders close button', () => {
+  it('delegates pause/clear/close to LogToolbar', () => {
     renderPanel({ isOpen: true });
+    expect(
+      screen.getByRole('button', { name: /pause/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /clear/i }),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: /close/i }),
     ).toBeInTheDocument();
   });
 
-  it('calls onClose when close button is clicked', async () => {
-    const onClose = vi.fn();
-    const user = userEvent.setup();
-    renderPanel({ isOpen: true, onClose });
-
-    await user.click(screen.getByRole('button', { name: /close/i }));
-    expect(onClose).toHaveBeenCalledTimes(1);
-  });
-
-  it('renders Pause/Resume button', () => {
-    renderPanel({ isOpen: true });
-    expect(
-      screen.getByRole('button', { name: /pause/i }),
-    ).toBeInTheDocument();
-  });
-
-  it('calls togglePause when Pause is clicked', async () => {
-    const user = userEvent.setup();
-    renderPanel({ isOpen: true });
-
-    await user.click(screen.getByRole('button', { name: /pause/i }));
-    expect(mockTogglePause).toHaveBeenCalledTimes(1);
-  });
-
-  it('shows Resume when paused', () => {
-    mockPaused = true;
-    renderPanel({ isOpen: true });
-    expect(
-      screen.getByRole('button', { name: /resume/i }),
-    ).toBeInTheDocument();
-  });
-
-  it('renders Clear button', () => {
-    renderPanel({ isOpen: true });
-    expect(
-      screen.getByRole('button', { name: /clear/i }),
-    ).toBeInTheDocument();
-  });
-
-  it('shows MOCKED badge for mocked entries', () => {
+  it('delegates entry rendering to LogEntryList', () => {
     renderPanel({ isOpen: true });
     expect(screen.getByText('MOCKED')).toBeInTheDocument();
-  });
-
-  it('shows REAL badge for non-mocked entries', () => {
-    renderPanel({ isOpen: true });
-    expect(screen.getByText('REAL')).toBeInTheDocument();
-  });
-
-  it('shows entry method, URL, status code, and duration', () => {
-    renderPanel({ isOpen: true });
-    expect(screen.getByText('GET')).toBeInTheDocument();
-    expect(screen.getByText(/api\.example\.com\/users/)).toBeInTheDocument();
     expect(screen.getByText('200')).toBeInTheDocument();
-    expect(screen.getByText(/12ms/)).toBeInTheDocument();
-  });
-
-  it('shows empty state message when no entries', () => {
-    mockStoreEntries = [];
-    renderPanel({ isOpen: true });
-    expect(
-      screen.getByText(/no requests captured/i),
-    ).toBeInTheDocument();
   });
 });
