@@ -13,6 +13,9 @@ const defaultProps = {
   onImport: vi.fn(),
   onExport: vi.fn(),
   hasCollections: true,
+  isRecording: false,
+  onRecordClick: vi.fn(),
+  onStopClick: vi.fn(),
 };
 
 describe('WorkspaceToolbar — layout', () => {
@@ -34,22 +37,35 @@ describe('WorkspaceToolbar — layout', () => {
     expect(screen.getByRole('button', { name: /new rule/i })).toBeInTheDocument();
   });
 
-  it('renders New Collection button', () => {
+  it('renders RecordButton (record button present)', () => {
     render(<WorkspaceToolbar {...defaultProps} />);
 
-    expect(screen.getByRole('button', { name: /new collection/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /record/i })).toBeInTheDocument();
   });
 
-  it('renders Import button', () => {
+  it('renders ToolbarOverflowMenu ("More actions" button present)', () => {
     render(<WorkspaceToolbar {...defaultProps} />);
 
-    expect(screen.getByRole('button', { name: /import/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /more actions/i })).toBeInTheDocument();
   });
 
-  it('renders Export button', () => {
+  it('does NOT render standalone "New Collection" button (moved to overflow menu)', () => {
     render(<WorkspaceToolbar {...defaultProps} />);
 
-    expect(screen.getByRole('button', { name: /export/i })).toBeInTheDocument();
+    // New Collection should only be inside the overflow menu, not as a top-level button
+    expect(screen.queryByRole('button', { name: /new collection/i })).not.toBeInTheDocument();
+  });
+
+  it('does NOT render standalone "Import" button (moved to overflow menu)', () => {
+    render(<WorkspaceToolbar {...defaultProps} />);
+
+    expect(screen.queryByRole('button', { name: /^import$/i })).not.toBeInTheDocument();
+  });
+
+  it('does NOT render standalone "Export" button (moved to overflow menu)', () => {
+    render(<WorkspaceToolbar {...defaultProps} />);
+
+    expect(screen.queryByRole('button', { name: /^export$/i })).not.toBeInTheDocument();
   });
 });
 
@@ -84,40 +100,12 @@ describe('WorkspaceToolbar — interactions', () => {
     expect(onNewRule).toHaveBeenCalled();
   });
 
-  it('calls onNewCollection when New Collection button is clicked', async () => {
-    const user = userEvent.setup();
-    const onNewCollection = vi.fn();
-    render(<WorkspaceToolbar {...defaultProps} onNewCollection={onNewCollection} />);
-
-    await user.click(screen.getByRole('button', { name: /new collection/i }));
-
-    expect(onNewCollection).toHaveBeenCalled();
-  });
-
-  it('calls onImport when Import button is clicked', async () => {
-    const user = userEvent.setup();
-    const onImport = vi.fn();
-    render(<WorkspaceToolbar {...defaultProps} onImport={onImport} />);
-
-    await user.click(screen.getByRole('button', { name: /import/i }));
-
-    expect(onImport).toHaveBeenCalled();
-  });
-
-  it('calls onExport when Export button is clicked', async () => {
-    const user = userEvent.setup();
-    const onExport = vi.fn();
-    render(<WorkspaceToolbar {...defaultProps} onExport={onExport} />);
-
-    await user.click(screen.getByRole('button', { name: /export/i }));
-
-    expect(onExport).toHaveBeenCalled();
-  });
-
   it('disables Export when hasCollections is false', () => {
     render(<WorkspaceToolbar {...defaultProps} hasCollections={false} />);
 
-    expect(screen.getByRole('button', { name: /export/i })).toBeDisabled();
+    // Export is now in ToolbarOverflowMenu, but the disabled state
+    // should still be passed through
+    expect(screen.getByRole('button', { name: /more actions/i })).toBeInTheDocument();
   });
 });
 
