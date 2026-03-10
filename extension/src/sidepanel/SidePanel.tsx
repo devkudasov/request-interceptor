@@ -1,6 +1,8 @@
+import { useEffect } from 'react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@/ui/theme/ThemeProvider';
 import { useLogPanelStore } from '@/shared/log-panel-store';
+import { useAuthStore, useLogStore } from '@/shared/store';
 import { BottomBar } from './components/BottomBar';
 import { LogPanel } from './components/log/LogPanel';
 import { WorkspacePage } from './pages/WorkspacePage';
@@ -10,6 +12,12 @@ import { BillingPage } from './pages/BillingPage';
 
 export function SidePanel() {
   const { isOpen, togglePanel, unseenCount } = useLogPanelStore();
+
+  useEffect(() => {
+    useAuthStore.getState().fetchUser();
+    useAuthStore.getState().startAuthListener();
+    useLogStore.getState().startListening();
+  }, []);
 
   return (
     <ThemeProvider>
