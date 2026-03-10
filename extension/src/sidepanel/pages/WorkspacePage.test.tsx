@@ -181,6 +181,93 @@ describe('WorkspacePage — filtering', () => {
   });
 });
 
+describe('WorkspacePage — quota enforcement', () => {
+  it('shows UpgradePrompt when creating rule at free plan limit', async () => {
+    storeState.user = { ...mockUser, plan: 'free' };
+    storeState.rules = Array.from({ length: 10 }, (_, i) => ({
+      ...httpRule, id: `r${i}`, collectionId: null,
+    }));
+    renderPage();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByText(/\+ new rule/i));
+
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+    expect(screen.getByText(/reached the limit of 10 rules/i)).toBeInTheDocument();
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('allows creating rule when under limit', async () => {
+    storeState.user = { ...mockUser, plan: 'free' };
+    storeState.rules = [httpRule];
+    renderPage();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByText(/\+ new rule/i));
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(mockNavigate).toHaveBeenCalledWith('/rules/new');
+  });
+
+  it('allows creating rule when no user (unauthenticated)', async () => {
+    storeState.user = null;
+    storeState.rules = Array.from({ length: 10 }, (_, i) => ({
+      ...httpRule, id: `r${i}`, collectionId: null,
+    }));
+    renderPage();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByText(/\+ new rule/i));
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(mockNavigate).toHaveBeenCalledWith('/rules/new');
+  });
+
+  it('shows UpgradePrompt when creating collection at free plan limit', async () => {
+    storeState.user = { ...mockUser, plan: 'free' };
+    storeState.collections = Array.from({ length: 3 }, (_, i) => ({
+      ...collection, id: `c${i}`, name: `Col ${i}`,
+    }));
+    renderPage();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /more actions/i }));
+    await user.click(screen.getByText(/new collection/i));
+
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+    expect(screen.getByText(/reached the limit of 3 collections/i)).toBeInTheDocument();
+  });
+
+  it('navigates to /billing when Upgrade clicked in UpgradePrompt', async () => {
+    storeState.user = { ...mockUser, plan: 'free' };
+    storeState.rules = Array.from({ length: 10 }, (_, i) => ({
+      ...httpRule, id: `r${i}`, collectionId: null,
+    }));
+    renderPage();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByText(/\+ new rule/i));
+    await user.click(screen.getByRole('button', { name: /upgrade/i }));
+
+    expect(mockNavigate).toHaveBeenCalledWith('/billing');
+  });
+
+  it('dismisses UpgradePrompt when Cancel clicked', async () => {
+    storeState.user = { ...mockUser, plan: 'free' };
+    storeState.rules = Array.from({ length: 10 }, (_, i) => ({
+      ...httpRule, id: `r${i}`, collectionId: null,
+    }));
+    renderPage();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByText(/\+ new rule/i));
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /cancel/i }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+});
+
 describe('WorkspacePage — actions', () => {
   it('New Rule button navigates to /rules/new', async () => {
     const user = userEvent.setup();
