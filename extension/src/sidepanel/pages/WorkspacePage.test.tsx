@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { WorkspacePage } from './WorkspacePage';
-import type { MockRule, Collection, AuthUser } from '@/shared/types';
+import type { MockRule, Collection, AuthUser, LogEntry } from '@/shared/types';
 
 // --- Mock data ---
 const httpRule: MockRule = {
@@ -40,8 +40,15 @@ let storeState = {
   team: null as { id: string; name: string; members: { userId: string }[] } | null,
   activeTypeTab: 'http' as 'http' | 'websocket' | 'graphql',
   collapsedCollections: new Set<string>(),
+  isRecording: false,
+  recordingTabId: null as number | null,
+  recordedEntries: [] as LogEntry[],
+  tabs: [] as chrome.tabs.Tab[],
 };
 
+const mockStartRecording = vi.fn();
+const mockStopRecording = vi.fn();
+const mockFetchTabs = vi.fn();
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
@@ -75,6 +82,21 @@ vi.mock('@/shared/store', () => ({
     syncing: false, lastSyncAt: null, conflict: null, error: null,
     pushToCloud: vi.fn(), pullFromCloud: vi.fn(), resolveConflict: vi.fn(),
   })),
+  useRecordingStore: vi.fn(() => ({
+    isRecording: storeState.isRecording,
+    recordingTabId: storeState.recordingTabId,
+    recordedEntries: storeState.recordedEntries,
+    startRecording: mockStartRecording,
+    stopRecording: mockStopRecording,
+    fetchRecordingData: vi.fn(),
+  })),
+  useTabsStore: vi.fn(() => ({
+    tabs: storeState.tabs,
+    activeTabIds: [],
+    loading: false,
+    fetchTabs: mockFetchTabs,
+    toggleTab: vi.fn(),
+  })),
 }));
 
 vi.mock('@/shared/import-export', () => ({
@@ -97,6 +119,8 @@ beforeEach(() => {
   storeState = {
     rules: [], collections: [], user: null, team: null,
     activeTypeTab: 'http', collapsedCollections: new Set(),
+    isRecording: false, recordingTabId: null,
+    recordedEntries: [], tabs: [],
   };
 });
 
@@ -265,6 +289,95 @@ describe('WorkspacePage — quota enforcement', () => {
 
     await user.click(screen.getByRole('button', { name: /cancel/i }));
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+});
+
+describe('WorkspacePage — recording', () => {
+  const mockTabs: chrome.tabs.Tab[] = [
+    { id: 101, title: 'Example', url: 'https://example.com', index: 0, pinned: false, highlighted: false, active: true, incognito: false, selected: false, windowId: 1, discarded: false, autoDiscardable: true, groupId: -1 },
+    { id: 102, title: 'Other Site', url: 'https://other.com', index: 1, pinned: false, highlighted: false, active: false, incognito: false, selected: false, windowId: 1, discarded: false, autoDiscardable: true, groupId: -1 },
+  ];
+
+  it('Record button click shows RecordPopover', async () => {
+    storeState.tabs = mockTabs;
+    storeState.rules = [httpRule]; // has content so empty state doesn't show
+    renderPage();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /^record$/i }));
+
+    expect(mockFetchTabs).toHaveBeenCalled();
+    expect(screen.getByText(/record api responses/i)).toBeInTheDocument();
+  });
+
+  it('RecordPopover shows available tabs', async () => {
+    storeState.tabs = mockTabs;
+    storeState.rules = [httpRule];
+    renderPage();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /^record$/i }));
+
+    expect(screen.getByText('Example')).toBeInTheDocument();
+    expect(screen.getByText('Other Site')).toBeInTheDocument();
+  });
+
+  it('Start recording from popover calls startRecording and closes popover', async () => {
+    storeState.tabs = mockTabs;
+    storeState.rules = [httpRule];
+    renderPage();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /^record$/i }));
+    await user.click(screen.getByRole('button', { name: /start recording/i }));
+
+    expect(mockStartRecording).toHaveBeenCalledWith(101);
+    expect(screen.queryByText(/record api responses/i)).not.toBeInTheDocument();
+  });
+
+  it('Stop recording calls stopRecording', async () => {
+    storeState.isRecording = true;
+    storeState.recordingTabId = 101;
+    renderPage();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /stop/i }));
+
+    expect(mockStopRecording).toHaveBeenCalled();
+  });
+
+  it('After stop recording, recorded entries are available in store', async () => {
+    const recordedEntry: LogEntry = {
+      id: 'le1', timestamp: '2026-01-01T00:00:00Z', tabId: 101,
+      method: 'GET', url: 'https://api.example.com/data',
+      requestHeaders: {}, requestBody: null, statusCode: 200,
+      responseHeaders: {}, responseBody: '{"ok":true}',
+      responseSize: 12, duration: 100, mocked: false, matchedRuleId: null,
+    };
+    mockStopRecording.mockResolvedValue([recordedEntry]);
+    storeState.isRecording = true;
+    storeState.recordingTabId = 101;
+    renderPage();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /stop/i }));
+
+    expect(mockStopRecording).toHaveBeenCalled();
+  });
+
+  it('Empty state Record button opens popover', async () => {
+    storeState.tabs = mockTabs;
+    // No rules or collections → empty state
+    renderPage();
+
+    const user = userEvent.setup();
+    // The empty state has a "Record" button
+    const recordButtons = screen.getAllByRole('button', { name: /record/i });
+    // Click the empty state one (last one)
+    await user.click(recordButtons[recordButtons.length - 1]);
+
+    expect(mockFetchTabs).toHaveBeenCalled();
+    expect(screen.getByText(/record api responses/i)).toBeInTheDocument();
   });
 });
 
