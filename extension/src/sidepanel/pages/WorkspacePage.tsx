@@ -6,6 +6,8 @@ import {
   useAuthStore,
   useTeamsStore,
   useWorkspaceUIStore,
+  useRecordingStore,
+  useTabsStore,
 } from '@/shared/store';
 import {
   filterRulesByType,
@@ -21,6 +23,7 @@ import { RequestTypeTabs } from '../components/workspace/RequestTypeTabs';
 import { TeamHeader } from '../components/workspace/TeamHeader';
 import { TeamPanel } from '../components/workspace/TeamPanel';
 import { SyncControls } from '../components/SyncControls';
+import { RecordPopover } from '../components/workspace/RecordPopover';
 import { WorkspaceCollections } from './workspace/WorkspaceCollections';
 import { WorkspaceUngrouped } from './workspace/WorkspaceUngrouped';
 import { NewCollectionModal } from './workspace/NewCollectionModal';
@@ -34,6 +37,8 @@ export function WorkspacePage() {
   const [upgradeMessage, setUpgradeMessage] = useState<string | null>(null);
   const importRef = useRef<HTMLInputElement>(null);
 
+  const [showRecordPopover, setShowRecordPopover] = useState(false);
+
   const { rules, fetchRules, toggleRule, deleteRule } = useRulesStore();
   const { collections, fetchCollections, createCollection, toggleCollection } =
     useCollectionsStore();
@@ -41,6 +46,8 @@ export function WorkspacePage() {
   const teamStore = useTeamsStore();
   const { activeTypeTab, setActiveTypeTab, collapsedCollections, toggleCollectionCollapsed } =
     useWorkspaceUIStore();
+  const { isRecording, startRecording, stopRecording } = useRecordingStore();
+  const { tabs, fetchTabs } = useTabsStore();
 
   useEffect(() => {
     fetchRules();
@@ -139,9 +146,14 @@ export function WorkspacePage() {
         onImport={handleImport}
         onExport={handleExport}
         hasCollections={collections.length > 0}
-        isRecording={false}
-        onRecordClick={() => {}}
-        onStopClick={() => {}}
+        isRecording={isRecording}
+        onRecordClick={() => {
+          fetchTabs();
+          setShowRecordPopover(true);
+        }}
+        onStopClick={async () => {
+          await stopRecording();
+        }}
       />
 
       <input
@@ -160,7 +172,10 @@ export function WorkspacePage() {
         <WorkspaceEmptyState
           onCreateRule={handleNewRule}
           onCreateCollection={handleNewCollection}
-          onRecord={() => {}}
+          onRecord={() => {
+            fetchTabs();
+            setShowRecordPopover(true);
+          }}
         />
       ) : (
         <>
@@ -199,6 +214,17 @@ export function WorkspacePage() {
             navigate('/billing');
           }}
           onClose={() => setUpgradeMessage(null)}
+        />
+      )}
+
+      {showRecordPopover && (
+        <RecordPopover
+          tabs={tabs}
+          onStartRecording={async (tabId) => {
+            await startRecording(tabId);
+            setShowRecordPopover(false);
+          }}
+          onClose={() => setShowRecordPopover(false)}
         />
       )}
     </div>
