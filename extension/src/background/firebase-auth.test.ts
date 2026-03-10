@@ -21,7 +21,7 @@ const {
   mockGoogleAuthProvider: { credential: vi.fn() },
   mockGithubAuthProvider: { credential: vi.fn() },
   mockGetDoc: vi.fn(),
-  mockOnSnapshot: vi.fn(() => vi.fn()),
+  mockOnSnapshot: vi.fn((_docRef: unknown, _cb: unknown) => vi.fn()),
 }));
 
 // Mock firebase/app
@@ -412,7 +412,8 @@ describe('setupAuthListener', () => {
     });
 
     let snapshotCallback: (snapshot: { exists: () => boolean; data: () => Record<string, unknown> }) => void = () => {};
-    mockOnSnapshot.mockImplementation((_docRef: unknown, cb: typeof snapshotCallback) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockOnSnapshot.mockImplementation((_docRef: unknown, cb: any) => {
       snapshotCallback = cb;
       return vi.fn();
     });
