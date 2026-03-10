@@ -13,7 +13,9 @@ import {
   buildCollectionTree,
 } from '@/shared/selectors';
 import { exportCollections, downloadJson, parseImportFile } from '@/shared/import-export';
+import { canCreateRule, canCreateCollection, getQuotaMessage } from '@/shared/billing';
 import { WorkspaceToolbar } from '../components/workspace/WorkspaceToolbar';
+import { UpgradePrompt } from '../components/billing/UpgradePrompt';
 import { WorkspaceEmptyState } from '../components/workspace/WorkspaceEmptyState';
 import { RequestTypeTabs } from '../components/workspace/RequestTypeTabs';
 import { TeamHeader } from '../components/workspace/TeamHeader';
@@ -29,6 +31,7 @@ export function WorkspacePage() {
   const [methodFilter, setMethodFilter] = useState('ALL');
   const [teamExpanded, setTeamExpanded] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [upgradeMessage, setUpgradeMessage] = useState<string | null>(null);
   const importRef = useRef<HTMLInputElement>(null);
 
   const { rules, fetchRules, toggleRule, deleteRule } = useRulesStore();
@@ -58,7 +61,22 @@ export function WorkspacePage() {
   const hasContent = rules.length > 0 || collections.length > 0;
   const showTeam = Boolean(user && teamStore.team);
 
-  const handleNewRule = useCallback(() => navigate('/rules/new'), [navigate]);
+  const handleNewRule = useCallback(() => {
+    if (user && !canCreateRule(user.plan, rules.length)) {
+      setUpgradeMessage(getQuotaMessage('rules', user.plan));
+      return;
+    }
+    navigate('/rules/new');
+  }, [navigate, user, rules.length]);
+
+  const handleNewCollection = useCallback(() => {
+    if (user && !canCreateCollection(user.plan, collections.length)) {
+      setUpgradeMessage(getQuotaMessage('collections', user.plan));
+      return;
+    }
+    setShowModal(true);
+  }, [user, collections.length]);
+
   const handleEditRule = useCallback((id: string) => navigate(`/rules/${id}/edit`), [navigate]);
 
   const handleExport = useCallback(() => {
@@ -117,7 +135,7 @@ export function WorkspacePage() {
         methodFilter={methodFilter}
         onMethodFilterChange={setMethodFilter}
         onNewRule={handleNewRule}
-        onNewCollection={() => setShowModal(true)}
+        onNewCollection={handleNewCollection}
         onImport={handleImport}
         onExport={handleExport}
         hasCollections={collections.length > 0}
@@ -141,7 +159,7 @@ export function WorkspacePage() {
       {!hasContent ? (
         <WorkspaceEmptyState
           onCreateRule={handleNewRule}
-          onCreateCollection={() => setShowModal(true)}
+          onCreateCollection={handleNewCollection}
           onRecord={() => {}}
         />
       ) : (
@@ -170,6 +188,17 @@ export function WorkspacePage() {
         <NewCollectionModal
           onClose={() => setShowModal(false)}
           onCreate={createCollection}
+        />
+      )}
+
+      {upgradeMessage && (
+        <UpgradePrompt
+          message={upgradeMessage}
+          onUpgrade={() => {
+            setUpgradeMessage(null);
+            navigate('/billing');
+          }}
+          onClose={() => setUpgradeMessage(null)}
         />
       )}
     </div>
