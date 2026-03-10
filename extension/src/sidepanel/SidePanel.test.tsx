@@ -77,8 +77,8 @@ describe('SidePanel routing — removed routes', () => {
 
 /* --- Store mocks for full SidePanel render --- */
 
-vi.mock('@/shared/store', () => ({
-  useAuthStore: vi.fn(() => ({
+vi.mock('@/shared/store', () => {
+  const authStoreState = {
     user: null,
     loading: false,
     error: null,
@@ -89,69 +89,84 @@ vi.mock('@/shared/store', () => ({
     logout: vi.fn(),
     fetchUser: vi.fn(),
     clearError: vi.fn(),
-  })),
-  useRulesStore: vi.fn(() => ({
-    rules: [],
-    loading: false,
-    fetchRules: vi.fn(),
-    toggleRule: vi.fn(),
-    deleteRule: vi.fn(),
-    createRule: vi.fn(),
-    updateRule: vi.fn(),
-  })),
-  useCollectionsStore: vi.fn(() => ({
-    collections: [],
-    loading: false,
-    fetchCollections: vi.fn(),
-    createCollection: vi.fn(),
-    deleteCollection: vi.fn(),
-    toggleCollection: vi.fn(),
-  })),
-  useTeamsStore: vi.fn(() => ({
-    team: null,
-    members: [],
-    loading: false,
-    fetchTeam: vi.fn(),
-  })),
-  useWorkspaceUIStore: vi.fn(() => ({
-    selectedTab: 'all',
-    setSelectedTab: vi.fn(),
-    searchQuery: '',
-    setSearchQuery: vi.fn(),
-  })),
-  useSyncStore: vi.fn(() => ({
-    syncStatus: 'idle',
-    lastSyncedAt: null,
-    sync: vi.fn(),
-    startAutoSync: vi.fn(),
-    stopAutoSync: vi.fn(),
-  })),
-  useLogStore: vi.fn(() => ({
+    startAuthListener: vi.fn(),
+  };
+  const useAuthStore = Object.assign(
+    vi.fn(() => authStoreState),
+    { getState: () => authStoreState },
+  );
+
+  const logStoreState = {
     entries: [],
     paused: false,
     fetchLog: vi.fn(),
     clearLog: vi.fn(),
     togglePause: vi.fn(),
     startListening: vi.fn(),
-  })),
-  useRecordingStore: vi.fn(() => ({
-    isRecording: false,
-    recordedEntries: [],
-    startRecording: vi.fn(),
-    stopRecording: vi.fn(),
-  })),
-  useTabsStore: vi.fn(() => ({
-    tabs: [],
-    activeTabIds: [],
-    fetchTabs: vi.fn(),
-  })),
-  useVersionStore: vi.fn(() => ({
-    versions: [],
-    loading: false,
-    fetchVersions: vi.fn(),
-    restoreVersion: vi.fn(),
-  })),
-}));
+  };
+  const useLogStore = Object.assign(
+    vi.fn(() => logStoreState),
+    { getState: () => logStoreState },
+  );
+
+  return {
+    useAuthStore,
+    useRulesStore: vi.fn(() => ({
+      rules: [],
+      loading: false,
+      fetchRules: vi.fn(),
+      toggleRule: vi.fn(),
+      deleteRule: vi.fn(),
+      createRule: vi.fn(),
+      updateRule: vi.fn(),
+    })),
+    useCollectionsStore: vi.fn(() => ({
+      collections: [],
+      loading: false,
+      fetchCollections: vi.fn(),
+      createCollection: vi.fn(),
+      deleteCollection: vi.fn(),
+      toggleCollection: vi.fn(),
+    })),
+    useTeamsStore: vi.fn(() => ({
+      team: null,
+      members: [],
+      loading: false,
+      fetchTeam: vi.fn(),
+    })),
+    useWorkspaceUIStore: vi.fn(() => ({
+      selectedTab: 'all',
+      setSelectedTab: vi.fn(),
+      searchQuery: '',
+      setSearchQuery: vi.fn(),
+    })),
+    useSyncStore: vi.fn(() => ({
+      syncStatus: 'idle',
+      lastSyncedAt: null,
+      sync: vi.fn(),
+      startAutoSync: vi.fn(),
+      stopAutoSync: vi.fn(),
+    })),
+    useLogStore,
+    useRecordingStore: vi.fn(() => ({
+      isRecording: false,
+      recordedEntries: [],
+      startRecording: vi.fn(),
+      stopRecording: vi.fn(),
+    })),
+    useTabsStore: vi.fn(() => ({
+      tabs: [],
+      activeTabIds: [],
+      fetchTabs: vi.fn(),
+    })),
+    useVersionStore: vi.fn(() => ({
+      versions: [],
+      loading: false,
+      fetchVersions: vi.fn(),
+      restoreVersion: vi.fn(),
+    })),
+  };
+});
 
 vi.mock('@/ui/theme/ThemeProvider', () => ({
   ThemeProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,

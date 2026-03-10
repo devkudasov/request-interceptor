@@ -242,6 +242,7 @@ interface AuthState {
   logout: () => Promise<void>;
   fetchUser: () => Promise<void>;
   clearError: () => void;
+  startAuthListener: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -310,6 +311,14 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   clearError: () => set({ error: null }),
+
+  startAuthListener: () => {
+    chrome.runtime.onMessage.addListener((message) => {
+      if (message.type === MESSAGE_TYPES.AUTH_STATE_CHANGED) {
+        set({ user: message.payload as AuthUser | null });
+      }
+    });
+  },
 }));
 
 // --- Log Store ---

@@ -9,6 +9,8 @@ const {
   mockSendEmailVerification,
   mockGoogleAuthProvider,
   mockGithubAuthProvider,
+  mockGetDoc,
+  mockOnSnapshot,
 } = vi.hoisted(() => ({
   mockSignInWithEmailAndPassword: vi.fn(),
   mockCreateUserWithEmailAndPassword: vi.fn(),
@@ -18,6 +20,8 @@ const {
   mockSendEmailVerification: vi.fn(),
   mockGoogleAuthProvider: { credential: vi.fn() },
   mockGithubAuthProvider: { credential: vi.fn() },
+  mockGetDoc: vi.fn(),
+  mockOnSnapshot: vi.fn(() => vi.fn()),
 }));
 
 // Mock firebase/app
@@ -41,6 +45,14 @@ vi.mock('firebase/auth', () => ({
   GithubAuthProvider: {
     credential: mockGithubAuthProvider.credential,
   },
+}));
+
+// Mock firebase/firestore
+vi.mock('firebase/firestore', () => ({
+  getFirestore: vi.fn(() => ({})),
+  doc: vi.fn((_db, _collection, _id) => ({ path: `${_collection}/${_id}` })),
+  getDoc: mockGetDoc,
+  onSnapshot: mockOnSnapshot,
 }));
 
 // Mock chrome APIs
@@ -78,6 +90,7 @@ const mockChrome = {
   },
   runtime: {
     id: 'test-extension-id',
+    sendMessage: vi.fn(),
   },
 };
 
@@ -108,9 +121,18 @@ const mockUser = {
   getIdToken: vi.fn(() => Promise.resolve('mock-id-token')),
 };
 
+function mockFirestoreDoc(data: Record<string, unknown> | null) {
+  mockGetDoc.mockResolvedValue({
+    exists: () => data !== null,
+    data: () => data,
+  });
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   Object.keys(mockChromeStorage).forEach((k) => delete mockChromeStorage[k]);
+  // Default: no Firestore doc (free plan)
+  mockFirestoreDoc(null);
 });
 
 describe('initializeFirebase', () => {
@@ -132,6 +154,27 @@ describe('signInWithEmail', () => {
     );
     expect(result).toBeDefined();
     expect(result.email).toBe('test@example.com');
+  });
+
+  it('merges billing data from Firestore into returned user', async () => {
+    mockSignInWithEmailAndPassword.mockResolvedValue({ user: mockUser });
+    mockFirestoreDoc({ plan: 'pro', subscriptionStatus: 'active', currentPeriodEnd: '2026-04-01', cancelAtPeriodEnd: false });
+
+    const result = await signInWithEmail('test@example.com', 'password123');
+
+    expect(result.plan).toBe('pro');
+    expect(result.subscriptionStatus).toBe('active');
+    expect(result.currentPeriodEnd).toBe('2026-04-01');
+    expect(result.cancelAtPeriodEnd).toBe(false);
+  });
+
+  it('defaults to free plan when no Firestore doc exists', async () => {
+    mockSignInWithEmailAndPassword.mockResolvedValue({ user: mockUser });
+    mockFirestoreDoc(null);
+
+    const result = await signInWithEmail('test@example.com', 'password123');
+
+    expect(result.plan).toBe('free');
   });
 
   it('throws on invalid credentials', async () => {
@@ -172,6 +215,17 @@ describe('registerWithEmail', () => {
     expect(result).toBeDefined();
   });
 
+  it('merges billing data from Firestore into returned user', async () => {
+    mockCreateUserWithEmailAndPassword.mockResolvedValue({ user: mockUser });
+    mockSendEmailVerification.mockResolvedValue(undefined);
+    mockFirestoreDoc({ plan: 'team', subscriptionStatus: 'active', currentPeriodEnd: '2026-05-01', cancelAtPeriodEnd: true });
+
+    const result = await registerWithEmail('new@example.com', 'password123');
+
+    expect(result.plan).toBe('team');
+    expect(result.cancelAtPeriodEnd).toBe(true);
+  });
+
   it('throws on weak password', async () => {
     mockCreateUserWithEmailAndPassword.mockRejectedValue(
       new Error('auth/weak-password')
@@ -210,6 +264,19 @@ describe('signInWithGoogle', () => {
     );
     expect(mockSignInWithCredential).toHaveBeenCalled();
     expect(result).toBeDefined();
+  });
+
+  it('merges billing data into Google sign-in result', async () => {
+    const redirectUrl = 'https://test-extension-id.chromiumapp.org/#id_token=mock-id-token&token_type=bearer';
+    (mockChrome.identity.launchWebAuthFlow as Mock).mockResolvedValue(redirectUrl);
+    mockGoogleAuthProvider.credential.mockReturnValue({ providerId: 'google.com' });
+    mockSignInWithCredential.mockResolvedValue({ user: mockUser });
+    mockFirestoreDoc({ plan: 'pro', subscriptionStatus: 'active' });
+
+    const result = await signInWithGoogle();
+
+    expect(result.plan).toBe('pro');
+    expect(result.subscriptionStatus).toBe('active');
   });
 
   it('throws when popup is blocked or closed', async () => {
@@ -270,7 +337,34 @@ describe('signOut', () => {
 });
 
 describe('setupAuthListener', () => {
-  it('persists user to chrome.storage.session when user signs in', () => {
+  it('persists user with billing data to chrome.storage.session when user signs in', async () => {
+    let authCallback: (user: typeof mockUser | null) => void = () => {};
+    mockOnAuthStateChanged.mockImplementation((_auth: unknown, cb: typeof authCallback) => {
+      authCallback = cb;
+      return vi.fn();
+    });
+    mockFirestoreDoc({ plan: 'pro', subscriptionStatus: 'active', currentPeriodEnd: '2026-04-01', cancelAtPeriodEnd: false });
+
+    initializeFirebase();
+    setupAuthListener();
+
+    await authCallback(mockUser);
+    // Wait for async operations
+    await vi.waitFor(() => {
+      expect(mockChrome.storage.session.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          __ri_auth_user: expect.objectContaining({
+            uid: 'user-123',
+            email: 'test@example.com',
+            plan: 'pro',
+            subscriptionStatus: 'active',
+          }),
+        })
+      );
+    });
+  });
+
+  it('broadcasts AUTH_STATE_CHANGED when user signs in', async () => {
     let authCallback: (user: typeof mockUser | null) => void = () => {};
     mockOnAuthStateChanged.mockImplementation((_auth: unknown, cb: typeof authCallback) => {
       authCallback = cb;
@@ -280,19 +374,89 @@ describe('setupAuthListener', () => {
     initializeFirebase();
     setupAuthListener();
 
-    authCallback(mockUser);
+    await authCallback(mockUser);
+    await vi.waitFor(() => {
+      expect(mockChrome.runtime.sendMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'AUTH_STATE_CHANGED',
+          payload: expect.objectContaining({
+            uid: 'user-123',
+            email: 'test@example.com',
+          }),
+        })
+      );
+    });
+  });
+
+  it('sets up Firestore onSnapshot listener for billing changes', async () => {
+    let authCallback: (user: typeof mockUser | null) => void = () => {};
+    mockOnAuthStateChanged.mockImplementation((_auth: unknown, cb: typeof authCallback) => {
+      authCallback = cb;
+      return vi.fn();
+    });
+
+    initializeFirebase();
+    setupAuthListener();
+
+    await authCallback(mockUser);
+    await vi.waitFor(() => {
+      expect(mockOnSnapshot).toHaveBeenCalled();
+    });
+  });
+
+  it('broadcasts updated billing data when Firestore snapshot fires', async () => {
+    let authCallback: (user: typeof mockUser | null) => void = () => {};
+    mockOnAuthStateChanged.mockImplementation((_auth: unknown, cb: typeof authCallback) => {
+      authCallback = cb;
+      return vi.fn();
+    });
+
+    let snapshotCallback: (snapshot: { exists: () => boolean; data: () => Record<string, unknown> }) => void = () => {};
+    mockOnSnapshot.mockImplementation((_docRef: unknown, cb: typeof snapshotCallback) => {
+      snapshotCallback = cb;
+      return vi.fn();
+    });
+
+    initializeFirebase();
+    setupAuthListener();
+
+    await authCallback(mockUser);
+    await vi.waitFor(() => {
+      expect(mockOnSnapshot).toHaveBeenCalled();
+    });
+
+    // Clear previous calls to isolate the snapshot broadcast
+    mockChrome.runtime.sendMessage.mockClear();
+    mockChrome.storage.session.set.mockClear();
+
+    // Simulate Firestore billing update
+    snapshotCallback({
+      exists: () => true,
+      data: () => ({ plan: 'team', subscriptionStatus: 'active', currentPeriodEnd: '2026-06-01', cancelAtPeriodEnd: true }),
+    });
+
+    expect(mockChrome.runtime.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'AUTH_STATE_CHANGED',
+        payload: expect.objectContaining({
+          uid: 'user-123',
+          plan: 'team',
+          subscriptionStatus: 'active',
+          cancelAtPeriodEnd: true,
+        }),
+      })
+    );
 
     expect(mockChrome.storage.session.set).toHaveBeenCalledWith(
       expect.objectContaining({
         __ri_auth_user: expect.objectContaining({
-          uid: 'user-123',
-          email: 'test@example.com',
+          plan: 'team',
         }),
       })
     );
   });
 
-  it('clears user from storage when user signs out', () => {
+  it('clears user from storage and broadcasts null when user signs out', async () => {
     let authCallback: (user: typeof mockUser | null) => void = () => {};
     mockOnAuthStateChanged.mockImplementation((_auth: unknown, cb: typeof authCallback) => {
       authCallback = cb;
@@ -302,9 +466,42 @@ describe('setupAuthListener', () => {
     initializeFirebase();
     setupAuthListener();
 
-    authCallback(null);
+    await authCallback(null);
+    await vi.waitFor(() => {
+      expect(mockChrome.storage.session.remove).toHaveBeenCalledWith('__ri_auth_user');
+      expect(mockChrome.runtime.sendMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'AUTH_STATE_CHANGED',
+          payload: null,
+        })
+      );
+    });
+  });
 
-    expect(mockChrome.storage.session.remove).toHaveBeenCalledWith('__ri_auth_user');
+  it('unsubscribes from previous Firestore listener when auth state changes', async () => {
+    let authCallback: (user: typeof mockUser | null) => void = () => {};
+    mockOnAuthStateChanged.mockImplementation((_auth: unknown, cb: typeof authCallback) => {
+      authCallback = cb;
+      return vi.fn();
+    });
+
+    const mockUnsubscribe = vi.fn();
+    mockOnSnapshot.mockReturnValue(mockUnsubscribe);
+
+    initializeFirebase();
+    setupAuthListener();
+
+    // Sign in
+    await authCallback(mockUser);
+    await vi.waitFor(() => {
+      expect(mockOnSnapshot).toHaveBeenCalled();
+    });
+
+    // Sign out — should unsubscribe from Firestore listener
+    await authCallback(null);
+    await vi.waitFor(() => {
+      expect(mockUnsubscribe).toHaveBeenCalled();
+    });
   });
 });
 
@@ -327,6 +524,26 @@ describe('getCurrentUser', () => {
     const user = await getCurrentUser();
 
     expect(user).toBeNull();
+  });
+});
+
+describe('broadcastAuthState', () => {
+  it('does not throw when sendMessage fails (side panel closed)', async () => {
+    let authCallback: (user: typeof mockUser | null) => void = () => {};
+    mockOnAuthStateChanged.mockImplementation((_auth: unknown, cb: typeof authCallback) => {
+      authCallback = cb;
+      return vi.fn();
+    });
+    mockChrome.runtime.sendMessage.mockImplementation(() => { throw new Error('No receiver'); });
+
+    initializeFirebase();
+    setupAuthListener();
+
+    // Should not throw
+    await authCallback(null);
+    await vi.waitFor(() => {
+      expect(mockChrome.storage.session.remove).toHaveBeenCalledWith('__ri_auth_user');
+    });
   });
 });
 
