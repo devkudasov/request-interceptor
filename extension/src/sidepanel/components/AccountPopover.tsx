@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/shared/store';
 import { AuthForm } from './AuthForm';
 import { StorageBar } from './StorageBar';
@@ -14,6 +15,7 @@ interface AccountPopoverProps {
 }
 
 export function AccountPopover({ onClose }: AccountPopoverProps) {
+  const navigate = useNavigate();
   const { user, loading, logout } = useAuthStore();
 
   if (!user) {
@@ -93,8 +95,13 @@ export function AccountPopover({ onClose }: AccountPopoverProps) {
       {/* Actions */}
       <div className="flex flex-col gap-sm">
         {user.plan === 'free' && (
-          <Button variant="secondary" fullWidth>
+          <Button variant="secondary" fullWidth onClick={() => navigate('/billing')}>
             Upgrade Plan
+          </Button>
+        )}
+        {user.plan !== 'free' && user.subscriptionStatus === 'active' && (
+          <Button variant="secondary" fullWidth onClick={() => navigate('/billing')}>
+            Manage Plan
           </Button>
         )}
         <Button
