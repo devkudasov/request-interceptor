@@ -3,11 +3,32 @@ import { MESSAGE_TYPES } from '@/shared/constants';
 
 export async function injectInterceptor(tabId: number): Promise<void> {
   try {
+    // Ensure content script is injected (for tabs opened before extension install)
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        files: ['src/content/index.ts'],
+      });
+    } catch {
+      // Content script may already be there, or tab might not support scripting
+    }
+
+    // Inject the MAIN world interceptor via <script> tag
+    const scriptUrl = chrome.runtime.getURL('src/injected/index.ts');
     await chrome.scripting.executeScript({
       target: { tabId },
-      world: 'MAIN',
-      files: ['src/injected/index.ts'],
+      func: (url: string) => {
+        if (document.getElementById('__ri_interceptor')) return;
+        const script = document.createElement('script');
+        script.id = '__ri_interceptor';
+        script.src = url;
+        (document.head || document.documentElement).appendChild(script);
+      },
+      args: [scriptUrl],
     });
+
+    // Give the script a moment to load before sending rules
+    await new Promise((r) => setTimeout(r, 100));
 
     // Send current rules to the newly injected tab
     await sendRulesToTab(tabId);
@@ -22,6 +43,8 @@ export async function removeInterceptor(tabId: number): Promise<void> {
       target: { tabId },
       world: 'MAIN',
       func: () => {
+        const el = document.getElementById('__ri_interceptor');
+        if (el) el.remove();
         window.dispatchEvent(new Event('beforeunload'));
       },
     });
