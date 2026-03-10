@@ -90,6 +90,10 @@ export const MESSAGE_TYPES = {
   GET_VERSION_HISTORY: 'GET_VERSION_HISTORY',
   GET_VERSION: 'GET_VERSION',
   RESTORE_VERSION: 'RESTORE_VERSION',
+
+  // Billing
+  CREATE_CHECKOUT_SESSION: 'CREATE_CHECKOUT_SESSION',
+  CREATE_CUSTOMER_PORTAL_SESSION: 'CREATE_CUSTOMER_PORTAL_SESSION',
 } as const;
 
 export const STORAGE_KEYS = {
@@ -104,10 +108,10 @@ export const STORAGE_KEYS = {
   USER_ID: 'userId',
 } as const;
 
-export const BILLING_MESSAGES = {
-  CREATE_CHECKOUT_SESSION: 'CREATE_CHECKOUT_SESSION',
-  CREATE_CUSTOMER_PORTAL_SESSION: 'CREATE_CUSTOMER_PORTAL_SESSION',
-} as const;
+export const PLAN_PRICE_IDS: Record<string, string> = {
+  pro: import.meta.env.VITE_STRIPE_PRO_PRICE_ID ?? '',
+  team: import.meta.env.VITE_STRIPE_TEAM_PRICE_ID ?? '',
+};
 
 // Unique prefix for window.postMessage to avoid conflicts with page scripts
 export const MESSAGE_PREFIX = '__REQ_INTERCEPTOR__';

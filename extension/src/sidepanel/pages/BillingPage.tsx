@@ -1,5 +1,6 @@
 import { useAuthStore } from '@/shared/store';
 import { useBillingStore } from '@/shared/billing-store';
+import { PLAN_PRICE_IDS } from '@/shared/constants';
 import { PlanCard } from '../components/billing/PlanCard';
 import { PlanComparisonTable } from '../components/billing/PlanComparisonTable';
 import type { AuthPlan } from '@/shared/types';
@@ -36,7 +37,10 @@ export function BillingPage() {
 
       <PlanComparisonTable
         currentPlan={plan}
-        onUpgrade={(selectedPlan) => createCheckoutSession(selectedPlan)}
+        onUpgrade={(selectedPlan) => {
+          const priceId = PLAN_PRICE_IDS[selectedPlan];
+          if (priceId) createCheckoutSession(priceId);
+        }}
       />
     </div>
   );

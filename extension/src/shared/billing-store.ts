@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { BILLING_MESSAGES } from './constants';
+import { MESSAGE_TYPES } from './constants';
 
 interface BillingState {
   loading: boolean;
@@ -16,15 +16,16 @@ export const useBillingStore = create<BillingState>((set) => ({
     set({ loading: true, error: null });
     try {
       const response = await chrome.runtime.sendMessage({
-        type: BILLING_MESSAGES.CREATE_CHECKOUT_SESSION,
-        data: {
+        type: MESSAGE_TYPES.CREATE_CHECKOUT_SESSION,
+        payload: {
           priceId,
           successUrl: `chrome-extension://${chrome.runtime.id}/sidepanel.html#/billing?checkout=success`,
           cancelUrl: `chrome-extension://${chrome.runtime.id}/sidepanel.html#/billing?checkout=canceled`,
         },
       });
+      if (!response.ok) throw new Error(response.error);
       set({ loading: false });
-      return response.url;
+      return response.data.url;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Checkout failed';
       set({ loading: false, error: message });
@@ -36,13 +37,14 @@ export const useBillingStore = create<BillingState>((set) => ({
     set({ loading: true, error: null });
     try {
       const response = await chrome.runtime.sendMessage({
-        type: BILLING_MESSAGES.CREATE_CUSTOMER_PORTAL_SESSION,
-        data: {
+        type: MESSAGE_TYPES.CREATE_CUSTOMER_PORTAL_SESSION,
+        payload: {
           returnUrl: `chrome-extension://${chrome.runtime.id}/sidepanel.html#/billing`,
         },
       });
+      if (!response.ok) throw new Error(response.error);
       set({ loading: false });
-      return response.url;
+      return response.data.url;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Portal session failed';
       set({ loading: false, error: message });

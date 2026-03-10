@@ -403,6 +403,25 @@ function registerHandlers() {
     };
     return restoreVersion(teamId, collectionId, versionId);
   });
+
+  // --- Billing ---
+  registerHandler(MESSAGE_TYPES.CREATE_CHECKOUT_SESSION, async (payload) => {
+    const { priceId, successUrl, cancelUrl } = payload as { priceId: string; successUrl: string; cancelUrl: string };
+    const { getFunctions, httpsCallable } = await import('firebase/functions');
+    const functions = getFunctions();
+    const createCheckout = httpsCallable(functions, 'createCheckoutSession');
+    const result = await createCheckout({ priceId, successUrl, cancelUrl });
+    return result.data;
+  });
+
+  registerHandler(MESSAGE_TYPES.CREATE_CUSTOMER_PORTAL_SESSION, async (payload) => {
+    const { returnUrl } = payload as { returnUrl: string };
+    const { getFunctions, httpsCallable } = await import('firebase/functions');
+    const functions = getFunctions();
+    const createPortal = httpsCallable(functions, 'createCustomerPortalSession');
+    const result = await createPortal({ returnUrl });
+    return result.data;
+  });
 }
 
 async function broadcastRulesToActiveTabs() {
