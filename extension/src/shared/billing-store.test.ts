@@ -33,20 +33,20 @@ describe('useBillingStore', () => {
     });
 
     it('sends correct message to background', async () => {
-      mockSendMessage.mockResolvedValue({ url: 'https://checkout.stripe.com/session' });
+      mockSendMessage.mockResolvedValue({ ok: true, data: { url: 'https://checkout.stripe.com/session' } });
 
       await useBillingStore.getState().createCheckoutSession('price_123');
 
       expect(mockSendMessage).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'CREATE_CHECKOUT_SESSION',
-          data: expect.objectContaining({ priceId: 'price_123' }),
+          payload: expect.objectContaining({ priceId: 'price_123' }),
         })
       );
     });
 
     it('returns checkout URL on success', async () => {
-      mockSendMessage.mockResolvedValue({ url: 'https://checkout.stripe.com/session' });
+      mockSendMessage.mockResolvedValue({ ok: true, data: { url: 'https://checkout.stripe.com/session' } });
 
       const url = await useBillingStore.getState().createCheckoutSession('price_123');
 
@@ -54,7 +54,7 @@ describe('useBillingStore', () => {
     });
 
     it('sets loading=false after success', async () => {
-      mockSendMessage.mockResolvedValue({ url: 'https://checkout.stripe.com/session' });
+      mockSendMessage.mockResolvedValue({ ok: true, data: { url: 'https://checkout.stripe.com/session' } });
 
       await useBillingStore.getState().createCheckoutSession('price_123');
 
@@ -69,23 +69,35 @@ describe('useBillingStore', () => {
       expect(useBillingStore.getState().error).toBe('Network error');
       expect(useBillingStore.getState().loading).toBe(false);
     });
+
+    it('throws when response is not ok', async () => {
+      mockSendMessage.mockResolvedValue({ ok: false, error: 'Server error' });
+
+      await expect(
+        useBillingStore.getState().createCheckoutSession('price_123')
+      ).rejects.toThrow('Server error');
+
+      expect(useBillingStore.getState().error).toBe('Server error');
+      expect(useBillingStore.getState().loading).toBe(false);
+    });
   });
 
   describe('createPortalSession', () => {
     it('sends correct message to background', async () => {
-      mockSendMessage.mockResolvedValue({ url: 'https://billing.stripe.com/portal' });
+      mockSendMessage.mockResolvedValue({ ok: true, data: { url: 'https://billing.stripe.com/portal' } });
 
       await useBillingStore.getState().createPortalSession();
 
       expect(mockSendMessage).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'CREATE_CUSTOMER_PORTAL_SESSION',
+          payload: expect.objectContaining({ returnUrl: expect.any(String) }),
         })
       );
     });
 
     it('returns portal URL on success', async () => {
-      mockSendMessage.mockResolvedValue({ url: 'https://billing.stripe.com/portal' });
+      mockSendMessage.mockResolvedValue({ ok: true, data: { url: 'https://billing.stripe.com/portal' } });
 
       const url = await useBillingStore.getState().createPortalSession();
 
@@ -98,6 +110,16 @@ describe('useBillingStore', () => {
       await useBillingStore.getState().createPortalSession().catch(() => {});
 
       expect(useBillingStore.getState().error).toBe('Portal error');
+    });
+
+    it('throws when response is not ok', async () => {
+      mockSendMessage.mockResolvedValue({ ok: false, error: 'Portal server error' });
+
+      await expect(
+        useBillingStore.getState().createPortalSession()
+      ).rejects.toThrow('Portal server error');
+
+      expect(useBillingStore.getState().error).toBe('Portal server error');
     });
   });
 });
