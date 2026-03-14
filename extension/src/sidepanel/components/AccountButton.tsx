@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useAuthStore } from '@/shared/store';
+import { useAuthStore } from '@/features/auth';
 import { getInitials } from '@/shared/utils/account';
 import { AccountPopover } from './AccountPopover';
 import { LoginPopover } from './LoginPopover';

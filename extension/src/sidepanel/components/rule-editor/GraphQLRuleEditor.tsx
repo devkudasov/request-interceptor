@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { RuleInputBar } from './RuleInputBar';
 import { ResponseConfig } from './ResponseConfig';
 import { Input } from '@/ui/common/Input';
-import type { HttpMethod, UrlMatchType, ResponseType } from '@/shared/types';
+import type { HttpMethod, UrlMatchType, ResponseType } from '@/features/rules';
 
 export interface GraphQLRuleFields {
   method: HttpMethod | 'ANY';

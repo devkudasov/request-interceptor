@@ -1,7 +1,8 @@
 import { Toggle } from '@/ui/common/Toggle';
 import { RuleCard } from './RuleCard';
 import { getChildCollections } from '@/shared/selectors';
-import type { MockRule, Collection } from '@/shared/types';
+import type { MockRule } from '@/features/rules';
+import type { Collection } from '@/features/collections';
 
 interface CollectionGroupProps {
   collection: Collection;

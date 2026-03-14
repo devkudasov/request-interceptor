@@ -1,14 +1,12 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  useRulesStore,
-  useCollectionsStore,
-  useAuthStore,
-  useTeamsStore,
-  useWorkspaceUIStore,
-  useRecordingStore,
-  useTabsStore,
-} from '@/shared/store';
+import { useRulesStore } from '@/features/rules';
+import { useCollectionsStore } from '@/features/collections';
+import { useAuthStore } from '@/features/auth';
+import { useTeamsStore } from '@/features/teams';
+import { useWorkspaceUIStore } from '@/features/workspace-ui';
+import { useRecordingStore } from '@/features/recording';
+import { useTabsStore } from '@/shared/stores';
 import {
   filterRulesByType,
   countRulesByType,

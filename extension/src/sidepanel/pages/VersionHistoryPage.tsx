@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useVersionStore } from '@/shared/store';
+import { useVersionStore } from '@/features/versions';
+import type { VersionSnapshot } from '@/features/versions';
 import { Button } from '@/ui/common/Button';
-import type { VersionSnapshot } from '@/shared/types';
 
 export function VersionHistoryPage() {
   const {

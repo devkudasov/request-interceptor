@@ -33,7 +33,7 @@ let mockVersionStoreState = {
   selectVersion: mockSelectVersion,
 };
 
-vi.mock('@/shared/store', () => ({
+vi.mock('@/features/versions', () => ({
   useVersionStore: vi.fn(() => mockVersionStoreState),
 }));
 

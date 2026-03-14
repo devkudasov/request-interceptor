@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TeamPanel } from './TeamPanel';
-import type { TeamMember, TeamInvite } from '@/shared/types';
+import type { TeamMember, TeamInvite } from '@/features/teams';
 
 const members: TeamMember[] = [
   { userId: 'u1', email: 'alice@test.com', displayName: 'Alice', role: 'owner', joinedAt: '2026-01-01T00:00:00Z' },

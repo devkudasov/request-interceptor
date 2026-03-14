@@ -14,7 +14,7 @@ import {
 } from 'firebase/auth';
 import { getFirestore, doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { firebaseConfig } from './firebase-config';
-import type { AuthUser } from '@/shared/types';
+import type { AuthUser } from '@/features/auth';
 import { MESSAGE_TYPES } from '@/shared/constants';
 
 let app: FirebaseApp | null = null;

@@ -1,4 +1,4 @@
-import type { MockRule } from '@/shared/types';
+import type { MockRule } from '@/features/rules';
 import { findMatchingRule } from './rule-matcher';
 import { MESSAGE_PREFIX } from '@/shared/constants';
 

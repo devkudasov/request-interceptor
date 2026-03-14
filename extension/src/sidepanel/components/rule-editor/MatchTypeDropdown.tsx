@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import type { UrlMatchType } from '@/shared/types';
+import type { UrlMatchType } from '@/features/rules';
 
 const MATCH_TYPES: Array<{ value: UrlMatchType; label: string }> = [
   { value: 'wildcard', label: 'Wild.' },

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { LogPanel } from './LogPanel';
-import type { LogEntry } from '@/shared/types';
+import type { LogEntry } from '@/features/logging';
 
 const mockEntries: LogEntry[] = [
   {
@@ -27,7 +27,7 @@ const mockClearLog = vi.fn();
 let mockPaused = false;
 let mockStoreEntries: LogEntry[] = [];
 
-vi.mock('@/shared/store', () => ({
+vi.mock('@/features/logging', () => ({
   useLogStore: (selector?: (s: unknown) => unknown) => {
     const state = {
       entries: mockStoreEntries,

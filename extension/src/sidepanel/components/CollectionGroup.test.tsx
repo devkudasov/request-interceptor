@@ -2,7 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CollectionGroup } from './CollectionGroup';
-import type { MockRule, Collection } from '@/shared/types';
+import type { MockRule } from '@/features/rules';
+import type { Collection } from '@/features/collections';
 
 const mockToggleCollection = vi.fn();
 const mockToggleRule = vi.fn();

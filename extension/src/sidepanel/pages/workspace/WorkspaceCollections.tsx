@@ -1,6 +1,7 @@
 import { CollectionGroup } from '../../components/CollectionGroup';
 import { getChildCollections } from '@/shared/selectors';
-import type { MockRule, Collection } from '@/shared/types';
+import type { MockRule } from '@/features/rules';
+import type { Collection } from '@/features/collections';
 
 interface WorkspaceCollectionsProps {
   collections: Collection[];

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AccountButton } from './AccountButton';
-import type { AuthUser } from '@/shared/types';
+import type { AuthUser } from '@/features/auth';
 
 const mockLogout = vi.fn();
 const mockFetchUser = vi.fn();
@@ -10,7 +10,7 @@ const mockFetchUser = vi.fn();
 let mockUser: AuthUser | null = null;
 let mockLoading = false;
 
-vi.mock('@/shared/store', () => ({
+vi.mock('@/features/auth', () => ({
   useAuthStore: vi.fn(() => ({
     user: mockUser,
     loading: mockLoading,

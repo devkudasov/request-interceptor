@@ -1,5 +1,5 @@
 import { RuleCard } from '../../components/RuleCard';
-import type { MockRule } from '@/shared/types';
+import type { MockRule } from '@/features/rules';
 
 interface WorkspaceUngroupedProps {
   rules: MockRule[];

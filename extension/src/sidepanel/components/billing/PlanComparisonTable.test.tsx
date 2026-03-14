@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { AuthPlan } from '@/shared/types';
+import type { AuthPlan } from '@/features/auth';
 import { PlanComparisonTable } from './PlanComparisonTable';
 
 interface PlanComparisonTableProps {

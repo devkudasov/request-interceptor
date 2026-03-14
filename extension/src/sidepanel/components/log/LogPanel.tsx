@@ -1,4 +1,4 @@
-import { useLogStore } from '@/shared/store';
+import { useLogStore } from '@/features/logging';
 import { LogToolbar } from './LogToolbar';
 import { LogEntryList } from './LogEntryList';
 

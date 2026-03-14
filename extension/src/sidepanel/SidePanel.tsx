@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@/ui/theme/ThemeProvider';
-import { useLogPanelStore } from '@/shared/log-panel-store';
-import { useAuthStore, useLogStore } from '@/shared/store';
+import { useLogPanelStore, useLogStore } from '@/features/logging';
+import { useAuthStore } from '@/features/auth';
 import { BottomBar } from './components/BottomBar';
 import { LogPanel } from './components/log/LogPanel';
 import { WorkspacePage } from './pages/WorkspacePage';

@@ -16,12 +16,15 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
-vi.mock('@/shared/store', () => ({
+vi.mock('@/features/rules', () => ({
   useRulesStore: vi.fn(() => ({
     rules: [],
     createRule: mockCreateRule,
     updateRule: mockUpdateRule,
   })),
+}));
+
+vi.mock('@/features/collections', () => ({
   useCollectionsStore: vi.fn(() => ({
     collections: [],
     fetchCollections: mockFetchCollections,

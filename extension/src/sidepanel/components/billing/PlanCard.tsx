@@ -1,4 +1,4 @@
-import type { AuthPlan, SubscriptionStatus } from '@/shared/types';
+import type { AuthPlan, SubscriptionStatus } from '@/features/auth';
 import { Button } from '@/ui/common/Button';
 
 interface PlanCardProps {

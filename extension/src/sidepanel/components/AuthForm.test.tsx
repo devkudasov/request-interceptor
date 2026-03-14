@@ -10,7 +10,7 @@ const mockLoginWithGoogle = vi.fn();
 const mockLoginWithGithub = vi.fn();
 const mockClearError = vi.fn();
 
-vi.mock('@/shared/store', () => ({
+vi.mock('@/features/auth', () => ({
   useAuthStore: vi.fn(() => ({
     loading: false,
     error: null,

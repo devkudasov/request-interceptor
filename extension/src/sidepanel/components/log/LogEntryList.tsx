@@ -1,6 +1,6 @@
 import { Badge } from '@/ui/common/Badge';
 import { methodColors } from '@/ui/theme/tokens';
-import type { LogEntry } from '@/shared/types';
+import type { LogEntry } from '@/features/logging';
 
 interface LogEntryListProps {
   entries: LogEntry[];

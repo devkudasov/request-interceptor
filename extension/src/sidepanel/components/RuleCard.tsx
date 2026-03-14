@@ -1,4 +1,4 @@
-import type { MockRule } from '@/shared/types';
+import type { MockRule } from '@/features/rules';
 import { Toggle } from '@/ui/common/Toggle';
 import { Badge } from '@/ui/common/Badge';
 import { Button } from '@/ui/common/Button';

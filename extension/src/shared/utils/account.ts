@@ -1,4 +1,5 @@
-import type { AuthPlan, PlanLimits } from '@/shared/types';
+import type { AuthPlan } from '@/features/auth';
+import type { PlanLimits } from '@/shared/types';
 
 export const PLAN_LIMITS: Record<AuthPlan, PlanLimits> = {
   free: {

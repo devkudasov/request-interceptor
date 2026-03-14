@@ -1,4 +1,6 @@
-import { useSyncStore, useTeamsStore, useAuthStore } from '@/shared/store';
+import { useSyncStore } from '@/features/sync';
+import { useTeamsStore } from '@/features/teams';
+import { useAuthStore } from '@/features/auth';
 import { Button } from '@/ui/common/Button';
 
 export function SyncControls() {

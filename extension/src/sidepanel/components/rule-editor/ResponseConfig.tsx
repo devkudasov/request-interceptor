@@ -3,7 +3,7 @@ import { Select } from '@/ui/common/Select';
 import { Input } from '@/ui/common/Input';
 import { KeyValueEditor } from '../KeyValueEditor';
 import { SizeIndicator } from '../SizeIndicator';
-import type { ResponseType } from '@/shared/types';
+import type { ResponseType } from '@/features/rules';
 
 const STATUS_OPTIONS = [
   { value: '200', label: '200 OK' },

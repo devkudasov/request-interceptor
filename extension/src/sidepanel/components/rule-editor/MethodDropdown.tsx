@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import type { HttpMethod } from '@/shared/types';
+import type { HttpMethod } from '@/features/rules';
 import { methodColors } from '@/ui/theme/tokens';
 
 const METHODS: Array<HttpMethod | 'ANY'> = ['ANY', 'GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];

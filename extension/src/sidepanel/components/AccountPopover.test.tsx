@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { AccountPopover } from './AccountPopover';
-import type { AuthUser } from '@/shared/types';
+import type { AuthUser } from '@/features/auth';
 
 const mockLogout = vi.fn();
 const mockFetchUser = vi.fn();
@@ -17,7 +17,7 @@ const mockNavigate = vi.fn();
 
 let mockUser: AuthUser | null = null;
 
-vi.mock('@/shared/store', () => ({
+vi.mock('@/features/auth', () => ({
   useAuthStore: vi.fn(() => ({
     user: mockUser,
     loading: false,

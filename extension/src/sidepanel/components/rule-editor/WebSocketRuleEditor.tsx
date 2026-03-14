@@ -1,7 +1,7 @@
 import { RuleInputBar } from './RuleInputBar';
 import { Button } from '@/ui/common/Button';
 import { Input } from '@/ui/common/Input';
-import type { UrlMatchType, WebSocketMessageRule } from '@/shared/types';
+import type { UrlMatchType, WebSocketMessageRule } from '@/features/rules';
 
 export interface WebSocketRuleFields {
   urlPattern: string;

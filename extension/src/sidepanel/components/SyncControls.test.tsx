@@ -36,9 +36,15 @@ let mockAuthStoreState = {
   loading: false,
 };
 
-vi.mock('@/shared/store', () => ({
+vi.mock('@/features/sync', () => ({
   useSyncStore: vi.fn(() => mockSyncStoreState),
+}));
+
+vi.mock('@/features/teams', () => ({
   useTeamsStore: vi.fn(() => mockTeamsStoreState),
+}));
+
+vi.mock('@/features/auth', () => ({
   useAuthStore: vi.fn(() => mockAuthStoreState),
 }));
 

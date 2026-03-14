@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useRulesStore, useCollectionsStore } from '@/shared/store';
+import { useRulesStore } from '@/features/rules';
+import { useCollectionsStore } from '@/features/collections';
 import { Button } from '@/ui/common/Button';
 import { Select } from '@/ui/common/Select';
 import { Toggle } from '@/ui/common/Toggle';
@@ -12,7 +13,7 @@ import { WebSocketRuleEditor } from '../components/rule-editor/WebSocketRuleEdit
 import type { WebSocketRuleFields } from '../components/rule-editor/WebSocketRuleEditor';
 import { GraphQLRuleEditor } from '../components/rule-editor/GraphQLRuleEditor';
 import type { GraphQLRuleFields } from '../components/rule-editor/GraphQLRuleEditor';
-import type { MockRule } from '@/shared/types';
+import type { MockRule } from '@/features/rules';
 
 function detectTab(rule: MockRule | null): RequestTypeTab {
   if (!rule) return 'http';

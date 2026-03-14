@@ -1,4 +1,4 @@
-import type { LogEntry } from '@/shared/types';
+import type { LogEntry } from '@/features/logging';
 import { getStorage, setStorage } from './storage';
 
 let recordedResponses: LogEntry[] = [];

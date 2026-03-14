@@ -1,5 +1,5 @@
 import { v4 as uuid } from 'uuid';
-import type { LogEntry } from '@/shared/types';
+import type { LogEntry } from '@/features/logging';
 import { getStorage, setStorage } from './storage';
 
 const MAX_LOG_ENTRIES = 1000;

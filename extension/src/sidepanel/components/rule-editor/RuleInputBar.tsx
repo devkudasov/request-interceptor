@@ -1,6 +1,6 @@
 import { MethodDropdown } from './MethodDropdown';
 import { MatchTypeDropdown } from './MatchTypeDropdown';
-import type { HttpMethod, UrlMatchType, RequestType } from '@/shared/types';
+import type { HttpMethod, UrlMatchType, RequestType } from '@/features/rules';
 
 interface RuleInputBarProps {
   method: HttpMethod | 'ANY';

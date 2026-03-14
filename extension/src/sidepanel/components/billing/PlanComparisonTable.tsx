@@ -1,4 +1,4 @@
-import type { AuthPlan } from '@/shared/types';
+import type { AuthPlan } from '@/features/auth';
 import { Button } from '@/ui/common/Button';
 
 interface PlanComparisonTableProps {

@@ -3,7 +3,10 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { WorkspacePage } from './WorkspacePage';
-import type { MockRule, Collection, AuthUser, LogEntry } from '@/shared/types';
+import type { MockRule } from '@/features/rules';
+import type { Collection } from '@/features/collections';
+import type { AuthUser } from '@/features/auth';
+import type { LogEntry } from '@/features/logging';
 
 // --- Mock data ---
 const httpRule: MockRule = {
@@ -55,22 +58,34 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate };
 });
 
-vi.mock('@/shared/store', () => ({
+vi.mock('@/features/rules', () => ({
   useRulesStore: vi.fn(() => ({
     rules: storeState.rules, loading: false, fetchRules: vi.fn(),
     toggleRule: vi.fn(), deleteRule: vi.fn(),
   })),
+}));
+
+vi.mock('@/features/collections', () => ({
   useCollectionsStore: vi.fn(() => ({
     collections: storeState.collections, loading: false,
     fetchCollections: vi.fn(), createCollection: vi.fn(),
     toggleCollection: vi.fn(),
   })),
+}));
+
+vi.mock('@/features/auth', () => ({
   useAuthStore: vi.fn(() => ({ user: storeState.user })),
+}));
+
+vi.mock('@/features/teams', () => ({
   useTeamsStore: vi.fn(() => ({
     team: storeState.team, pendingInvites: [], error: null,
     fetchTeam: vi.fn(), inviteMember: vi.fn(), removeMember: vi.fn(),
     acceptInvite: vi.fn(), declineInvite: vi.fn(),
   })),
+}));
+
+vi.mock('@/features/workspace-ui', () => ({
   useWorkspaceUIStore: vi.fn(() => ({
     activeTypeTab: storeState.activeTypeTab,
     setActiveTypeTab: vi.fn(),
@@ -78,10 +93,16 @@ vi.mock('@/shared/store', () => ({
     toggleCollectionCollapsed: vi.fn(),
     loadCollapsedState: vi.fn(),
   })),
+}));
+
+vi.mock('@/features/sync', () => ({
   useSyncStore: vi.fn(() => ({
     syncing: false, lastSyncAt: null, conflict: null, error: null,
     pushToCloud: vi.fn(), pullFromCloud: vi.fn(), resolveConflict: vi.fn(),
   })),
+}));
+
+vi.mock('@/features/recording', () => ({
   useRecordingStore: vi.fn(() => ({
     isRecording: storeState.isRecording,
     recordingTabId: storeState.recordingTabId,
@@ -90,12 +111,21 @@ vi.mock('@/shared/store', () => ({
     stopRecording: mockStopRecording,
     fetchRecordingData: vi.fn(),
   })),
+}));
+
+vi.mock('@/shared/stores', () => ({
   useTabsStore: vi.fn(() => ({
     tabs: storeState.tabs,
     activeTabIds: [],
     loading: false,
     fetchTabs: mockFetchTabs,
     toggleTab: vi.fn(),
+  })),
+  useSettingsStore: vi.fn(() => ({
+    settings: { theme: 'system', defaultDelay: 0, logEnabled: true, maxLogEntries: 1000 },
+    loading: false,
+    fetchSettings: vi.fn(),
+    setTheme: vi.fn(),
   })),
 }));
 

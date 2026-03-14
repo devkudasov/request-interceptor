@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Button } from '@/ui/common/Button';
 import { Input } from '@/ui/common/Input';
-import { useAuthStore } from '@/shared/store';
+import { useAuthStore } from '@/features/auth';
 
 type AuthMode = 'login' | 'register';
 

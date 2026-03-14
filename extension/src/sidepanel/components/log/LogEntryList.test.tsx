@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { LogEntryList } from './LogEntryList';
-import type { LogEntry } from '@/shared/types';
+import type { LogEntry } from '@/features/logging';
 
 const mockEntries: LogEntry[] = [
   {

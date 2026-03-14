@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { RuleInputBar } from './RuleInputBar';
-import type { HttpMethod, UrlMatchType } from '@/shared/types';
+import type { HttpMethod, UrlMatchType } from '@/features/rules';
 
 const defaultProps = {
   method: 'GET' as HttpMethod | 'ANY',

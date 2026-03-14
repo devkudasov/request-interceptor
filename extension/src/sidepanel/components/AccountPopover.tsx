@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '@/shared/store';
+import { useAuthStore } from '@/features/auth';
 import { AuthForm } from './AuthForm';
 import { StorageBar } from './StorageBar';
 import { Badge } from '@/ui/common/Badge';

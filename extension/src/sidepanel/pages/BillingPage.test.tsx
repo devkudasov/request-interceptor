@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import type { AuthUser } from '@/shared/types';
+import type { AuthUser } from '@/features/auth';
 
 const mockCreateCheckoutSession = vi.fn();
 const mockCreatePortalSession = vi.fn();
@@ -18,11 +18,11 @@ let mockBillingState: {
   createPortalSession: typeof mockCreatePortalSession;
 };
 
-vi.mock('@/shared/store', () => ({
+vi.mock('@/features/auth', () => ({
   useAuthStore: vi.fn(() => mockAuthState),
 }));
 
-vi.mock('@/shared/billing-store', () => ({
+vi.mock('@/features/billing', () => ({
   useBillingStore: vi.fn(() => mockBillingState),
 }));
 

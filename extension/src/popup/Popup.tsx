@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { ThemeProvider } from '@/ui/theme/ThemeProvider';
-import { useTabsStore, useRulesStore } from '@/shared/store';
+import { useTabsStore } from '@/shared/stores';
+import { useRulesStore } from '@/features/rules';
 import { Toggle } from '@/ui/common/Toggle';
 import { Button } from '@/ui/common/Button';
 import { Spinner } from '@/ui/common/Spinner';

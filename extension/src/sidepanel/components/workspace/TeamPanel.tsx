@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/ui/common/Button';
 import { Input } from '@/ui/common/Input';
-import type { TeamMember, TeamInvite } from '@/shared/types';
+import type { TeamMember, TeamInvite } from '@/features/teams';
 
 interface TeamPanelProps {
   teamId: string;
