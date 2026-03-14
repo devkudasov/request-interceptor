@@ -5,14 +5,14 @@ import { useCollectionsStore } from '@/features/collections';
 import { Button } from '@/ui/common/Button';
 import { Select } from '@/ui/common/Select';
 import { Toggle } from '@/ui/common/Toggle';
-import { RequestTypeTabs } from '../components/workspace/RequestTypeTabs';
-import type { RequestTypeTab } from '../components/workspace/RequestTypeTabs';
-import { HttpRuleEditor } from '../components/rule-editor/HttpRuleEditor';
-import type { HttpRuleFields } from '../components/rule-editor/HttpRuleEditor';
-import { WebSocketRuleEditor } from '../components/rule-editor/WebSocketRuleEditor';
-import type { WebSocketRuleFields } from '../components/rule-editor/WebSocketRuleEditor';
-import { GraphQLRuleEditor } from '../components/rule-editor/GraphQLRuleEditor';
-import type { GraphQLRuleFields } from '../components/rule-editor/GraphQLRuleEditor';
+import { RequestTypeTabs } from '@/features/workspace-ui/widgets/RequestTypeTabs';
+import type { RequestTypeTab } from '@/features/workspace-ui/widgets/RequestTypeTabs';
+import { HttpRuleEditor } from '@/features/rules/widgets/HttpRuleEditor';
+import type { HttpRuleFields } from '@/features/rules/widgets/HttpRuleEditor';
+import { WebSocketRuleEditor } from '@/features/rules/widgets/WebSocketRuleEditor';
+import type { WebSocketRuleFields } from '@/features/rules/widgets/WebSocketRuleEditor';
+import { GraphQLRuleEditor } from '@/features/rules/widgets/GraphQLRuleEditor';
+import type { GraphQLRuleFields } from '@/features/rules/widgets/GraphQLRuleEditor';
 import type { MockRule } from '@/features/rules';
 
 function detectTab(rule: MockRule | null): RequestTypeTab {

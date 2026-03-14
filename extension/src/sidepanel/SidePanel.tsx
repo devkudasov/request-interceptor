@@ -4,7 +4,7 @@ import { ThemeProvider } from '@/ui/theme/ThemeProvider';
 import { useLogPanelStore, useLogStore } from '@/features/logging';
 import { useAuthStore } from '@/features/auth';
 import { BottomBar } from './components/BottomBar';
-import { LogPanel } from './components/log/LogPanel';
+import { LogPanel } from '@/features/logging/widgets/LogPanel';
 import { WorkspacePage } from './pages/WorkspacePage';
 import { RuleEditorPage } from './pages/RuleEditorPage';
 import { VersionHistoryPage } from './pages/VersionHistoryPage';

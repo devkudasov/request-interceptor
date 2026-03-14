@@ -1,4 +1,4 @@
-import { CollectionGroup } from '../../components/CollectionGroup';
+import { CollectionGroup } from './CollectionGroup';
 import { getChildCollections } from '@/shared/selectors';
 import type { MockRule } from '@/features/rules';
 import type { Collection } from '@/features/collections';

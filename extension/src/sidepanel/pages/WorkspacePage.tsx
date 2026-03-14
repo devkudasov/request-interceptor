@@ -14,17 +14,17 @@ import {
 } from '@/shared/selectors';
 import { exportCollections, downloadJson, parseImportFile } from '@/shared/import-export';
 import { canCreateRule, canCreateCollection, getQuotaMessage } from '@/shared/billing';
-import { WorkspaceToolbar } from '../components/workspace/WorkspaceToolbar';
-import { UpgradePrompt } from '../components/billing/UpgradePrompt';
-import { WorkspaceEmptyState } from '../components/workspace/WorkspaceEmptyState';
-import { RequestTypeTabs } from '../components/workspace/RequestTypeTabs';
-import { TeamHeader } from '../components/workspace/TeamHeader';
-import { TeamPanel } from '../components/workspace/TeamPanel';
-import { SyncControls } from '../components/SyncControls';
-import { RecordPopover } from '../components/workspace/RecordPopover';
-import { WorkspaceCollections } from './workspace/WorkspaceCollections';
-import { WorkspaceUngrouped } from './workspace/WorkspaceUngrouped';
-import { NewCollectionModal } from './workspace/NewCollectionModal';
+import { WorkspaceToolbar } from '@/features/workspace-ui/widgets/WorkspaceToolbar';
+import { UpgradePrompt } from '@/features/billing/widgets/UpgradePrompt';
+import { WorkspaceEmptyState } from '@/features/workspace-ui/widgets/WorkspaceEmptyState';
+import { RequestTypeTabs } from '@/features/workspace-ui/widgets/RequestTypeTabs';
+import { TeamHeader } from '@/features/teams/widgets/TeamHeader';
+import { TeamPanel } from '@/features/teams/widgets/TeamPanel';
+import { SyncControls } from '@/features/sync/widgets/SyncControls';
+import { RecordPopover } from '@/features/recording/widgets/RecordPopover';
+import { WorkspaceCollections } from '@/features/collections/widgets/WorkspaceCollections';
+import { WorkspaceUngrouped } from '@/features/collections/widgets/WorkspaceUngrouped';
+import { NewCollectionModal } from '@/features/collections/widgets/NewCollectionModal';
 
 export function WorkspacePage() {
   const navigate = useNavigate();

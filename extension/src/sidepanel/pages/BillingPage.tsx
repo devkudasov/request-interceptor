@@ -2,8 +2,8 @@ import { useAuthStore } from '@/features/auth';
 import type { AuthPlan } from '@/features/auth';
 import { useBillingStore } from '@/features/billing';
 import { PLAN_PRICE_IDS } from '@/shared/constants';
-import { PlanCard } from '../components/billing/PlanCard';
-import { PlanComparisonTable } from '../components/billing/PlanComparisonTable';
+import { PlanCard } from '@/features/billing/widgets/PlanCard';
+import { PlanComparisonTable } from '@/features/billing/widgets/PlanComparisonTable';
 
 export function BillingPage() {
   const { user } = useAuthStore();

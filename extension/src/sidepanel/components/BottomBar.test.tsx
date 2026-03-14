@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { BottomBar } from './BottomBar';
 
 // Mock AccountButton so we can verify it renders
-vi.mock('./AccountButton', () => ({
+vi.mock('@/features/auth/widgets/AccountButton', () => ({
   AccountButton: () => <div data-testid="account-button">Account</div>,
 }));
 
