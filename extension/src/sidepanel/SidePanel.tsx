@@ -5,10 +5,10 @@ import { useLogPanelStore, useLogStore } from '@/features/logging';
 import { useAuthStore } from '@/features/auth';
 import { BottomBar } from './components/BottomBar';
 import { LogPanel } from '@/features/logging/widgets/LogPanel';
-import { WorkspacePage } from './pages/WorkspacePage';
-import { RuleEditorPage } from './pages/RuleEditorPage';
-import { VersionHistoryPage } from './pages/VersionHistoryPage';
-import { BillingPage } from './pages/BillingPage';
+import { WorkspacePage } from '@/screens/WorkspacePage';
+import { RuleEditorPage } from '@/screens/RuleEditorPage';
+import { VersionHistoryPage } from '@/screens/VersionHistoryPage';
+import { BillingPage } from '@/screens/BillingPage';
 
 export function SidePanel() {
   const { isOpen, togglePanel, unseenCount } = useLogPanelStore();
