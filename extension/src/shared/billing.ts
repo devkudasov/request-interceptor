@@ -1,4 +1,4 @@
-import type { AuthPlan } from '@/shared/types';
+import type { AuthPlan } from '@/features/auth';
 import { PLAN_LIMITS } from '@/shared/utils/account';
 
 export function canCreateRule(plan: AuthPlan, currentCount: number): boolean {

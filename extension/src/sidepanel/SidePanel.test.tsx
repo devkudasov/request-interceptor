@@ -77,7 +77,7 @@ describe('SidePanel routing — removed routes', () => {
 
 /* --- Store mocks for full SidePanel render --- */
 
-vi.mock('@/shared/store', () => {
+vi.mock('@/features/auth', () => {
   const authStoreState = {
     user: null,
     loading: false,
@@ -96,6 +96,10 @@ vi.mock('@/shared/store', () => {
     { getState: () => authStoreState },
   );
 
+  return { useAuthStore };
+});
+
+vi.mock('@/features/logging', () => {
   const logStoreState = {
     entries: [],
     paused: false,
@@ -110,63 +114,110 @@ vi.mock('@/shared/store', () => {
   );
 
   return {
-    useAuthStore,
-    useRulesStore: vi.fn(() => ({
-      rules: [],
-      loading: false,
-      fetchRules: vi.fn(),
-      toggleRule: vi.fn(),
-      deleteRule: vi.fn(),
-      createRule: vi.fn(),
-      updateRule: vi.fn(),
-    })),
-    useCollectionsStore: vi.fn(() => ({
-      collections: [],
-      loading: false,
-      fetchCollections: vi.fn(),
-      createCollection: vi.fn(),
-      deleteCollection: vi.fn(),
-      toggleCollection: vi.fn(),
-    })),
-    useTeamsStore: vi.fn(() => ({
-      team: null,
-      members: [],
-      loading: false,
-      fetchTeam: vi.fn(),
-    })),
-    useWorkspaceUIStore: vi.fn(() => ({
-      selectedTab: 'all',
-      setSelectedTab: vi.fn(),
-      searchQuery: '',
-      setSearchQuery: vi.fn(),
-    })),
-    useSyncStore: vi.fn(() => ({
-      syncStatus: 'idle',
-      lastSyncedAt: null,
-      sync: vi.fn(),
-      startAutoSync: vi.fn(),
-      stopAutoSync: vi.fn(),
-    })),
     useLogStore,
-    useRecordingStore: vi.fn(() => ({
-      isRecording: false,
-      recordedEntries: [],
-      startRecording: vi.fn(),
-      stopRecording: vi.fn(),
-    })),
-    useTabsStore: vi.fn(() => ({
-      tabs: [],
-      activeTabIds: [],
-      fetchTabs: vi.fn(),
-    })),
-    useVersionStore: vi.fn(() => ({
-      versions: [],
-      loading: false,
-      fetchVersions: vi.fn(),
-      restoreVersion: vi.fn(),
+    useLogPanelStore: vi.fn(() => ({
+      isOpen: false,
+      panelHeight: 250,
+      unseenCount: 0,
+      togglePanel: vi.fn(),
+      setPanelHeight: vi.fn(),
+      incrementUnseen: vi.fn(),
+      resetUnseen: vi.fn(),
     })),
   };
 });
+
+vi.mock('@/features/rules', () => ({
+  useRulesStore: vi.fn(() => ({
+    rules: [],
+    loading: false,
+    fetchRules: vi.fn(),
+    toggleRule: vi.fn(),
+    deleteRule: vi.fn(),
+    createRule: vi.fn(),
+    updateRule: vi.fn(),
+  })),
+}));
+
+vi.mock('@/features/collections', () => ({
+  useCollectionsStore: vi.fn(() => ({
+    collections: [],
+    loading: false,
+    fetchCollections: vi.fn(),
+    createCollection: vi.fn(),
+    deleteCollection: vi.fn(),
+    toggleCollection: vi.fn(),
+  })),
+}));
+
+vi.mock('@/features/teams', () => ({
+  useTeamsStore: vi.fn(() => ({
+    team: null,
+    members: [],
+    loading: false,
+    fetchTeam: vi.fn(),
+  })),
+}));
+
+vi.mock('@/features/workspace-ui', () => ({
+  useWorkspaceUIStore: vi.fn(() => ({
+    selectedTab: 'all',
+    setSelectedTab: vi.fn(),
+    searchQuery: '',
+    setSearchQuery: vi.fn(),
+  })),
+}));
+
+vi.mock('@/features/sync', () => ({
+  useSyncStore: vi.fn(() => ({
+    syncStatus: 'idle',
+    lastSyncedAt: null,
+    sync: vi.fn(),
+    startAutoSync: vi.fn(),
+    stopAutoSync: vi.fn(),
+  })),
+}));
+
+vi.mock('@/features/recording', () => ({
+  useRecordingStore: vi.fn(() => ({
+    isRecording: false,
+    recordedEntries: [],
+    startRecording: vi.fn(),
+    stopRecording: vi.fn(),
+  })),
+}));
+
+vi.mock('@/shared/stores', () => ({
+  useTabsStore: vi.fn(() => ({
+    tabs: [],
+    activeTabIds: [],
+    fetchTabs: vi.fn(),
+  })),
+  useSettingsStore: vi.fn(() => ({
+    settings: { theme: 'system', defaultDelay: 0, logEnabled: true, maxLogEntries: 1000 },
+    loading: false,
+    fetchSettings: vi.fn(),
+    setTheme: vi.fn(),
+  })),
+}));
+
+vi.mock('@/features/versions', () => ({
+  useVersionStore: vi.fn(() => ({
+    versions: [],
+    loading: false,
+    fetchVersions: vi.fn(),
+    restoreVersion: vi.fn(),
+  })),
+}));
+
+vi.mock('@/features/billing', () => ({
+  useBillingStore: vi.fn(() => ({
+    loading: false,
+    error: null,
+    createCheckoutSession: vi.fn(),
+    createPortalSession: vi.fn(),
+  })),
+}));
 
 vi.mock('@/ui/theme/ThemeProvider', () => ({
   ThemeProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,

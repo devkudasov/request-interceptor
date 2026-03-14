@@ -2,7 +2,9 @@ import { MESSAGE_TYPES } from '@/shared/constants';
 import { getStorage, setStorage, updateStorage } from './storage';
 import { addLogEntry, clearLog as clearLogEntries } from './logger';
 import { startRecording, stopRecording, addRecordedResponse, getRecordedResponses, isRecording, getRecordingTabId } from './recorder';
-import type { MockRule, Collection, LogEntry } from '@/shared/types';
+import type { MockRule } from '@/features/rules';
+import type { Collection } from '@/features/collections';
+import type { LogEntry } from '@/features/logging';
 import {
   signInWithEmail,
   registerWithEmail,
@@ -35,7 +37,8 @@ import {
   getVersion,
   restoreVersion,
 } from './firestore-versions';
-import type { TeamRole, ConflictStrategy } from '@/shared/types';
+import type { TeamRole } from '@/features/teams';
+import type { ConflictStrategy } from '@/features/sync';
 
 type MessageType = (typeof MESSAGE_TYPES)[keyof typeof MESSAGE_TYPES];
 

@@ -1,4 +1,4 @@
-import { AccountButton } from './AccountButton';
+import { AccountButton } from '@/features/auth/widgets/AccountButton';
 
 interface BottomBarProps {
   onToggleLog: () => void;

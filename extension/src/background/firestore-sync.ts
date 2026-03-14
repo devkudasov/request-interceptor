@@ -8,7 +8,8 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 
-import type { MockRule, Collection } from '@/shared/types';
+import type { MockRule } from '@/features/rules';
+import type { Collection } from '@/features/collections';
 
 function getDb() {
   return getFirestore();

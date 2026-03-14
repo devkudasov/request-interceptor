@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { findMatchingRule, extractGraphQLOperation, isGraphQLRequest } from './rule-matcher';
-import type { MockRule } from '@/shared/types';
+import type { MockRule } from '@/features/rules';
 
 function makeRule(overrides: Partial<MockRule> = {}): MockRule {
   return {

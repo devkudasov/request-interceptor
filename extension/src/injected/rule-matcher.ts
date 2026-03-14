@@ -1,7 +1,7 @@
 // This runs in MAIN world — no chrome.* APIs available
 // Rules are received via window.postMessage from content script
 
-import type { MockRule } from '@/shared/types';
+import type { MockRule } from '@/features/rules';
 import { matchUrl, matchBody } from '@/shared/url-matcher';
 
 export interface MatchResult {

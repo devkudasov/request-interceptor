@@ -74,7 +74,8 @@ import {
   getLastSyncTimestamp,
 } from './firestore-sync';
 
-import type { MockRule, Collection } from '@/shared/types';
+import type { MockRule } from '@/features/rules';
+import type { Collection } from '@/features/collections';
 
 const makeRule = (overrides: Partial<MockRule> = {}): MockRule => ({
   id: 'rule-1',

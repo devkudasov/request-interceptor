@@ -2,7 +2,7 @@ import { MESSAGE_PREFIX } from '@/shared/constants';
 import { installFetchInterceptor, uninstallFetchInterceptor, updateFetchRules } from './fetch-interceptor';
 import { installXHRInterceptor, uninstallXHRInterceptor, updateXHRRules } from './xhr-interceptor';
 import { installWebSocketInterceptor, uninstallWebSocketInterceptor, updateWebSocketRules } from './websocket-interceptor';
-import type { MockRule } from '@/shared/types';
+import type { MockRule } from '@/features/rules';
 
 // Install all interceptors
 installFetchInterceptor();

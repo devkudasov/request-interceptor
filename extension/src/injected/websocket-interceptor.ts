@@ -1,4 +1,4 @@
-import type { MockRule, WebSocketRule } from '@/shared/types';
+import type { MockRule, WebSocketRule } from '@/features/rules';
 import { matchUrl } from '@/shared/url-matcher';
 import { MESSAGE_PREFIX } from '@/shared/constants';
 
