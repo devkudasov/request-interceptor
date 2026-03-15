@@ -18,6 +18,7 @@ interface AccountPopoverProps {
 export function AccountPopover({ onClose }: AccountPopoverProps) {
   const navigate = useNavigate();
   const { user, loading, logout } = useAuthStore();
+  const { usedBytes } = useStorageUsage();
 
   if (!user) {
     return (
@@ -38,7 +39,6 @@ export function AccountPopover({ onClose }: AccountPopoverProps) {
   }
 
   const quota = PLAN_LIMITS[user.plan].storageBytes;
-  const { usedBytes } = useStorageUsage();
 
   return (
     <div className="p-md flex flex-col gap-lg">
