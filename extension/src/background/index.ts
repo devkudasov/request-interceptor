@@ -17,4 +17,6 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 setupMessageHandler();
 setupTabListeners();
 
+chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
+
 console.log('[Request Interceptor] Background service worker started');

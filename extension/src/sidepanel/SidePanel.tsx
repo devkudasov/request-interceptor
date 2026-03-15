@@ -4,36 +4,12 @@ import { ThemeProvider } from '@/ui/theme/ThemeProvider';
 import { useLogPanelStore, useLogStore } from '@/features/logging';
 import { useAuthStore } from '@/features/auth';
 import { BottomBar } from './components/BottomBar';
+import { TabSelector } from './components/TabSelector';
 import { LogPanel } from '@/features/logging/widgets/LogPanel';
 import { WorkspacePage } from '@/screens/WorkspacePage';
 import { RuleEditorPage } from '@/screens/RuleEditorPage';
 import { VersionHistoryPage } from '@/screens/VersionHistoryPage';
 import { BillingPage } from '@/screens/BillingPage';
-
-async function activateInterceptorsOnActiveTabs() {
-  try {
-    const result = await chrome.storage.local.get('activeTabIds');
-    const activeTabIds: number[] = result.activeTabIds ?? [];
-    for (const tabId of activeTabIds) {
-      try {
-        await chrome.tabs.sendMessage(tabId, {
-          type: 'TAB_STATUS_CHANGED',
-          payload: { enabled: true },
-        });
-        const rulesResult = await chrome.storage.local.get('rules');
-        const rules = (rulesResult.rules ?? []).filter((r: { enabled: boolean }) => r.enabled);
-        await chrome.tabs.sendMessage(tabId, {
-          type: 'INJECT_RULES',
-          payload: rules,
-        });
-      } catch {
-        // Tab might not have content script yet
-      }
-    }
-  } catch {
-    // Ignore
-  }
-}
 
 export function SidePanel() {
   const { isOpen, togglePanel, unseenCount } = useLogPanelStore();
@@ -42,13 +18,13 @@ export function SidePanel() {
     useAuthStore.getState().fetchUser();
     useAuthStore.getState().startAuthListener();
     useLogStore.getState().startListening();
-    activateInterceptorsOnActiveTabs();
   }, []);
 
   return (
     <ThemeProvider>
       <MemoryRouter>
         <div className="h-screen flex flex-col bg-surface-primary text-content-primary">
+          <TabSelector />
           <main className="flex-1 overflow-y-auto min-h-0 p-md">
             <Routes>
               <Route path="/" element={<WorkspacePage />} />

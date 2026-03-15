@@ -2,6 +2,21 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
+// Stub chrome APIs for tests that reference chrome global
+vi.stubGlobal('chrome', {
+  tabs: { query: vi.fn().mockResolvedValue([]) },
+  storage: {
+    local: { get: vi.fn(), set: vi.fn() },
+    onChanged: { addListener: vi.fn(), removeListener: vi.fn() },
+  },
+  runtime: {
+    id: 'test-extension-id',
+    lastError: null,
+    onMessage: { addListener: vi.fn() },
+    sendMessage: vi.fn(),
+  },
+});
+
 // Stub components that represent the expected route targets
 function WorkspacePage() { return <div data-testid="workspace-page">WorkspacePage</div>; }
 function RuleEditorPage() { return <div data-testid="rule-editor-page">RuleEditorPage</div>; }
@@ -208,6 +223,20 @@ vi.mock('@/features/versions', () => ({
     fetchVersions: vi.fn(),
     restoreVersion: vi.fn(),
   })),
+}));
+
+vi.mock('@/shared/stores/active-tab', () => ({
+  useActiveTabStore: vi.fn((selector?: (state: unknown) => unknown) => {
+    const state = {
+      activeTabId: null,
+      tabs: [],
+      loading: false,
+      setActiveTab: vi.fn(),
+      clearActiveTab: vi.fn(),
+      fetchTabs: vi.fn(),
+    };
+    return selector ? selector(state) : state;
+  }),
 }));
 
 vi.mock('@/features/billing', () => ({
