@@ -5,6 +5,7 @@ import type { MockRule } from '@/features/rules';
 import type { Collection } from '@/features/collections';
 import type { AuthUser } from '@/features/auth';
 import type { VersionSnapshot } from '@/features/versions';
+import type { LogEntry } from '@/features/logging/types';
 
 // ---------------------------------------------------------------------------
 // Mock data
@@ -63,7 +64,7 @@ let rulesState = { rules: [] as MockRule[] };
 let collectionsState = { collections: [] as Collection[] };
 let authState = { user: null as AuthUser | null };
 let workspaceUIState = { activeTypeTab: 'http' as 'http' | 'websocket' | 'graphql' };
-let recordingState = { isRecording: false };
+let recordingState = { isRecording: false, recordedEntries: [] as LogEntry[] };
 let billingState = { loading: false, error: null as string | null };
 let versionState = {
   versions: [] as VersionSnapshot[],
@@ -147,10 +148,11 @@ vi.mock('@/features/recording', () => ({
   useRecordingStore: vi.fn(() => ({
     isRecording: recordingState.isRecording,
     recordingTabId: null,
-    recordedEntries: [],
+    recordedEntries: recordingState.recordedEntries,
     startRecording: vi.fn(),
     stopRecording: vi.fn(),
     fetchRecordingData: vi.fn(),
+    saveRecordedAsRules: vi.fn(),
   })),
 }));
 
@@ -243,7 +245,7 @@ beforeEach(() => {
   collectionsState = { collections: [] };
   authState = { user: null };
   workspaceUIState = { activeTypeTab: 'http' };
-  recordingState = { isRecording: false };
+  recordingState = { isRecording: false, recordedEntries: [] };
   billingState = { loading: false, error: null };
   versionState = { versions: [], selectedVersion: null, loading: false, error: null };
 });
@@ -318,6 +320,81 @@ describe('VersionHistoryPage snapshots', () => {
   it('with versions', () => {
     versionState.versions = sampleVersions;
     const { container } = renderWithRouter(<VersionHistoryPage />);
+    expect(container.innerHTML).toMatchSnapshot();
+  });
+});
+
+// ===========================================================================
+// WorkspacePage — recording flow snapshots
+// ===========================================================================
+
+describe('WorkspacePage — recording flow snapshots', () => {
+  const sampleRecordedEntries: LogEntry[] = [
+    {
+      id: 'log1',
+      timestamp: '2026-03-15T10:00:00Z',
+      tabId: 1,
+      method: 'GET',
+      url: 'https://api.example.com/users',
+      requestHeaders: { 'Accept': 'application/json' },
+      requestBody: null,
+      statusCode: 200,
+      responseHeaders: { 'Content-Type': 'application/json' },
+      responseBody: '{"users":[]}',
+      responseSize: 12,
+      duration: 150,
+      mocked: false,
+      matchedRuleId: null,
+    },
+    {
+      id: 'log2',
+      timestamp: '2026-03-15T10:00:01Z',
+      tabId: 1,
+      method: 'POST',
+      url: 'https://api.example.com/users',
+      requestHeaders: { 'Content-Type': 'application/json' },
+      requestBody: '{"name":"Test"}',
+      statusCode: 201,
+      responseHeaders: { 'Content-Type': 'application/json' },
+      responseBody: '{"id":"u1","name":"Test"}',
+      responseSize: 24,
+      duration: 200,
+      mocked: false,
+      matchedRuleId: null,
+    },
+    {
+      id: 'log3',
+      timestamp: '2026-03-15T10:00:02Z',
+      tabId: 1,
+      method: 'DELETE',
+      url: 'https://api.example.com/users/u1',
+      requestHeaders: {},
+      requestBody: null,
+      statusCode: 204,
+      responseHeaders: {},
+      responseBody: null,
+      responseSize: 0,
+      duration: 100,
+      mocked: false,
+      matchedRuleId: null,
+    },
+  ];
+
+  it('shows SaveRecordedPanel after recording stops', () => {
+    recordingState.isRecording = false;
+    recordingState.recordedEntries = sampleRecordedEntries;
+    rulesState.rules = [httpRule];
+    collectionsState.collections = [collection];
+    const { container } = renderWithRouter(<WorkspacePage />);
+    expect(container.innerHTML).toMatchSnapshot();
+  });
+
+  it('SaveRecordedPanel empty state', () => {
+    recordingState.isRecording = false;
+    recordingState.recordedEntries = [];
+    rulesState.rules = [httpRule];
+    collectionsState.collections = [collection];
+    const { container } = renderWithRouter(<WorkspacePage />);
     expect(container.innerHTML).toMatchSnapshot();
   });
 });
