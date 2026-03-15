@@ -1,6 +1,8 @@
+import { useNavigate } from 'react-router-dom';
 import { useLogStore } from '@/features/logging';
 import { LogToolbar } from './LogToolbar';
 import { LogEntryList } from './LogEntryList';
+import type { LogEntry } from '@/features/logging';
 
 interface LogPanelProps {
   isOpen: boolean;
@@ -12,6 +14,16 @@ export function LogPanel({ isOpen, onClose }: LogPanelProps) {
   const paused = useLogStore((s) => s.paused);
   const togglePause = useLogStore((s) => s.togglePause);
   const clearLog = useLogStore((s) => s.clearLog);
+  const navigate = useNavigate();
+
+  const handleEntryClick = (entry: LogEntry) => {
+    if (entry.mocked && entry.matchedRuleId) {
+      navigate(`/rules/${entry.matchedRuleId}/edit`);
+    } else {
+      navigate('/rules/new', { state: { fromLogEntry: entry } });
+    }
+    onClose();
+  };
 
   if (!isOpen) return null;
 
@@ -23,7 +35,7 @@ export function LogPanel({ isOpen, onClose }: LogPanelProps) {
         onClear={() => clearLog()}
         onClose={onClose}
       />
-      <LogEntryList entries={entries} />
+      <LogEntryList entries={entries} onEntryClick={handleEntryClick} />
     </div>
   );
 }

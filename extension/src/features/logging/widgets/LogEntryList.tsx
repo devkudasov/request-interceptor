@@ -13,9 +13,10 @@ function getStatusColor(code: number): string {
 
 interface LogEntryListProps {
   entries: LogEntry[];
+  onEntryClick?: (entry: LogEntry) => void;
 }
 
-export function LogEntryList({ entries }: LogEntryListProps) {
+export function LogEntryList({ entries, onEntryClick }: LogEntryListProps) {
   if (entries.length === 0) {
     return (
       <div className="flex-1 overflow-y-auto">
@@ -32,7 +33,8 @@ export function LogEntryList({ entries }: LogEntryListProps) {
         {entries.map((entry) => (
           <div
             key={entry.id}
-            className="flex items-center gap-xs px-sm py-xs border-b border-border text-xs font-mono"
+            className="flex items-center gap-xs px-sm py-xs border-b border-border text-xs font-mono cursor-pointer hover:bg-surface-secondary transition-colors"
+            onClick={() => onEntryClick?.(entry)}
           >
             <Badge color={methodColors[entry.method] ?? '#6B7280'}>
               {entry.method}

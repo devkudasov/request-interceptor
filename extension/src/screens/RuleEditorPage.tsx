@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useRulesStore } from '@/features/rules';
 import { useCollectionsStore } from '@/features/collections';
 import { Button } from '@/ui/common/Button';
@@ -14,6 +14,7 @@ import type { WebSocketRuleFields } from '@/features/rules/widgets/WebSocketRule
 import { GraphQLRuleEditor } from '@/features/rules/widgets/GraphQLRuleEditor';
 import type { GraphQLRuleFields } from '@/features/rules/widgets/GraphQLRuleEditor';
 import type { MockRule } from '@/features/rules';
+import type { LogEntry } from '@/features/logging';
 
 function detectTab(rule: MockRule | null): RequestTypeTab {
   if (!rule) return 'http';
@@ -22,28 +23,37 @@ function detectTab(rule: MockRule | null): RequestTypeTab {
   return 'http';
 }
 
+function httpMethodOrAny(method: string): MockRule['method'] {
+  const valid = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS', 'ANY'];
+  return valid.includes(method) ? (method as MockRule['method']) : 'ANY';
+}
+
 export function RuleEditorPage() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const location = useLocation();
   const { rules, createRule, updateRule } = useRulesStore();
   const { collections, fetchCollections } = useCollectionsStore();
 
   const existingRule = id ? rules.find((r) => r.id === id) : null;
   const isEdit = !!existingRule;
+  const prefill = (location.state as { fromLogEntry?: LogEntry } | null)?.fromLogEntry;
 
   const [activeTab, setActiveTab] = useState<RequestTypeTab>(detectTab(existingRule ?? null));
 
   const [httpFields, setHttpFields] = useState<HttpRuleFields>({
-    method: existingRule?.method ?? 'GET',
-    urlPattern: existingRule?.urlPattern ?? '',
+    method: existingRule?.method ?? httpMethodOrAny(prefill?.method ?? 'GET'),
+    urlPattern: existingRule?.urlPattern ?? prefill?.url ?? '',
     urlMatchType: existingRule?.urlMatchType ?? 'wildcard',
     bodyMatch: existingRule?.bodyMatch ?? '',
-    statusCode: String(existingRule?.statusCode ?? 200),
+    statusCode: String(existingRule?.statusCode ?? prefill?.statusCode ?? 200),
     responseType: existingRule?.responseType ?? 'json',
-    responseBody: existingRule?.responseBody ?? '',
+    responseBody: existingRule?.responseBody ?? prefill?.responseBody ?? '',
     headers: existingRule?.responseHeaders
       ? Object.entries(existingRule.responseHeaders)
-      : [['Content-Type', 'application/json']],
+      : prefill?.responseHeaders && Object.keys(prefill.responseHeaders).length > 0
+        ? Object.entries(prefill.responseHeaders)
+        : [['Content-Type', 'application/json']],
     delay: String(existingRule?.delay ?? 0),
   });
 

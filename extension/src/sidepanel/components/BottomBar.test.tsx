@@ -14,9 +14,9 @@ function renderBar(props: Partial<React.ComponentProps<typeof BottomBar>> = {}) 
 }
 
 describe('BottomBar', () => {
-  it('renders log toggle button with text "Log"', () => {
+  it('renders log toggle button with text "Logs"', () => {
     renderBar();
-    expect(screen.getByText('Log')).toBeInTheDocument();
+    expect(screen.getByText('Logs')).toBeInTheDocument();
   });
 
   it('renders AccountButton on the right side', () => {
@@ -44,7 +44,7 @@ describe('BottomBar', () => {
     const user = userEvent.setup();
     renderBar({ onToggleLog });
 
-    await user.click(screen.getByText('Log'));
+    await user.click(screen.getByText('Logs'));
     expect(onToggleLog).toHaveBeenCalledTimes(1);
   });
 

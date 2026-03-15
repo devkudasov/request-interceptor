@@ -386,10 +386,12 @@ describe('Logging composition: LogPanel + LogEntryList + LogToolbar', () => {
     logStoreState.paused = false;
 
     const { container } = render(
-      <LogPanel isOpen={true} onClose={vi.fn()} />,
+      <MemoryRouter>
+        <LogPanel isOpen={true} onClose={vi.fn()} />
+      </MemoryRouter>,
     );
 
-    expect(screen.getByText('Log')).toBeInTheDocument();
+    expect(screen.getByText('Logs')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /pause/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /clear/i })).toBeInTheDocument();
     expect(screen.getByText('https://api.example.com/users')).toBeInTheDocument();
@@ -398,7 +400,9 @@ describe('Logging composition: LogPanel + LogEntryList + LogToolbar', () => {
 
   it('LogPanel returns null when closed', () => {
     const { container } = render(
-      <LogPanel isOpen={false} onClose={vi.fn()} />,
+      <MemoryRouter>
+        <LogPanel isOpen={false} onClose={vi.fn()} />
+      </MemoryRouter>,
     );
     expect(container.innerHTML).toBe('');
   });

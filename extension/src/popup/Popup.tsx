@@ -65,7 +65,7 @@ function PopupContent() {
         </div>
         <div className="grid grid-cols-2 gap-xs">
           <Button size="sm" onClick={openSidePanel}>Open Editor</Button>
-          <Button variant="secondary" size="sm" onClick={openSidePanel}>Request Log</Button>
+          <Button variant="secondary" size="sm" onClick={openSidePanel}>Request Logs</Button>
         </div>
       </div>
     </div>

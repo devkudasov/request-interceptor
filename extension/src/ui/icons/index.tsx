@@ -26,11 +26,11 @@ export function CloseIcon({ className, size = 16 }: IconProps) {
   return <img src={closeSvg} alt="" width={size} height={size} className={className} />;
 }
 
-export function ShieldIcon({ className, size = 14 }: IconProps) {
+export function ShieldIcon({ className, size = 16 }: IconProps) {
   return <img src={shieldSvg} alt="" width={size} height={size} className={className} />;
 }
 
-export function GlobeIcon({ className, size = 14 }: IconProps) {
+export function GlobeIcon({ className, size = 16 }: IconProps) {
   return <img src={globeSvg} alt="" width={size} height={size} className={className} />;
 }
 

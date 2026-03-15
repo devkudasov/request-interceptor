@@ -16,7 +16,7 @@ export function LogToolbar({
 }: LogToolbarProps) {
   return (
     <div className="flex items-center justify-between px-sm py-xs border-b border-border">
-      <span className="text-sm font-semibold text-content-primary">Log</span>
+      <span className="text-sm font-semibold text-content-primary">Logs</span>
       <div className="flex items-center gap-xs">
         <Button
           variant="ghost"
