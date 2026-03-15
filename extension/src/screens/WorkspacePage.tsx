@@ -22,6 +22,7 @@ import { TeamHeader } from '@/features/teams/widgets/TeamHeader';
 import { TeamPanel } from '@/features/teams/widgets/TeamPanel';
 import { SyncControls } from '@/features/sync/widgets/SyncControls';
 import { RecordPopover } from '@/features/recording/widgets/RecordPopover';
+import { SaveRecordedPanel } from '@/features/recording/widgets/SaveRecordedPanel';
 import { WorkspaceCollections } from '@/features/collections/widgets/WorkspaceCollections';
 import { WorkspaceUngrouped } from '@/features/collections/widgets/WorkspaceUngrouped';
 import { NewCollectionModal } from '@/features/collections/widgets/NewCollectionModal';
@@ -44,7 +45,9 @@ export function WorkspacePage() {
   const teamStore = useTeamsStore();
   const { activeTypeTab, setActiveTypeTab, collapsedCollections, toggleCollectionCollapsed } =
     useWorkspaceUIStore();
-  const { isRecording, startRecording, stopRecording } = useRecordingStore();
+  const { isRecording, startRecording, stopRecording, recordedEntries, saveRecordedAsRules } =
+    useRecordingStore();
+  const [savingRules, setSavingRules] = useState(false);
   const { tabs, fetchTabs } = useTabsStore();
 
   useEffect(() => {
@@ -223,6 +226,25 @@ export function WorkspacePage() {
             setShowRecordPopover(false);
           }}
           onClose={() => setShowRecordPopover(false)}
+        />
+      )}
+
+      {!isRecording && recordedEntries.length > 0 && (
+        <SaveRecordedPanel
+          entries={recordedEntries}
+          saving={savingRules}
+          onSave={async () => {
+            setSavingRules(true);
+            try {
+              await saveRecordedAsRules();
+              await fetchRules();
+            } finally {
+              setSavingRules(false);
+            }
+          }}
+          onDiscard={() => {
+            useRecordingStore.setState({ recordedEntries: [] });
+          }}
         />
       )}
     </div>
