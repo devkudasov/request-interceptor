@@ -36,6 +36,12 @@
       "matches": ["<all_urls>"],
       "js": ["src/content/index.ts"],
       "run_at": "document_start"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/injected/index.ts"],
+      "run_at": "document_start",
+      "world": "MAIN"
     }
   ],
   "icons": {
@@ -43,11 +49,5 @@
     "32": "icons/icon-32.png",
     "48": "icons/icon-48.png",
     "128": "icons/icon-128.png"
-  },
-  "web_accessible_resources": [
-    {
-      "resources": ["src/injected/index.ts"],
-      "matches": ["<all_urls>"]
-    }
-  ]
+  }
 }

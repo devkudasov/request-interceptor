@@ -1,0 +1,129 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Version bump type'
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: extension/package-lock.json
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump version in package.json
+        working-directory: extension
+        run: |
+          npm version ${{ inputs.version_bump }} --no-git-tag-version
+          echo "NEW_VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
+
+      - name: Sync version to manifest.json
+        run: node scripts/sync-version.js
+
+      - name: Install dependencies
+        working-directory: extension
+        run: npm ci
+
+      - name: Lint
+        working-directory: extension
+        run: npm run lint
+
+      - name: Type check
+        working-directory: extension
+        run: npm run typecheck
+
+      - name: Test
+        working-directory: extension
+        run: npm test
+
+      - name: Build extension
+        working-directory: extension
+        run: npm run build
+
+      - name: Package extension ZIP
+        run: |
+          cd extension/dist
+          zip -r "../../request-interceptor-v${NEW_VERSION}.zip" .
+
+      - name: Generate changelog
+        run: |
+          chmod +x scripts/generate-changelog.sh
+          ./scripts/generate-changelog.sh > CHANGELOG_BODY.md
+          cat CHANGELOG_BODY.md
+
+      - name: Commit version bump
+        run: |
+          git add extension/package.json extension/public/manifest.json
+          git commit -m "release: v${NEW_VERSION}"
+
+      - name: Create tag
+        run: git tag "v${NEW_VERSION}"
+
+      - name: Push commit and tag
+        run: |
+          git push origin develop
+          git push origin "v${NEW_VERSION}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.NEW_VERSION }}
+          name: v${{ env.NEW_VERSION }}
+          body_path: CHANGELOG_BODY.md
+          files: request-interceptor-v${{ env.NEW_VERSION }}.zip
+          draft: false
+          prerelease: false
+
+      # ──────────────────────────────────────────────────────
+      # Chrome Web Store Upload (placeholder)
+      # ──────────────────────────────────────────────────────
+      # To enable automatic Chrome Web Store publishing:
+      # 1. Set up these repository secrets:
+      #    - CHROME_EXTENSION_ID
+      #    - CHROME_CLIENT_ID
+      #    - CHROME_CLIENT_SECRET
+      #    - CHROME_REFRESH_TOKEN
+      # 2. Uncomment the step below
+      #
+      # - name: Upload to Chrome Web Store
+      #   run: |
+      #     npx chrome-webstore-upload-cli upload \
+      #       --source "request-interceptor-v${NEW_VERSION}.zip" \
+      #       --extension-id ${{ secrets.CHROME_EXTENSION_ID }} \
+      #       --client-id ${{ secrets.CHROME_CLIENT_ID }} \
+      #       --client-secret ${{ secrets.CHROME_CLIENT_SECRET }} \
+      #       --refresh-token ${{ secrets.CHROME_REFRESH_TOKEN }}
+      #
+      # - name: Publish on Chrome Web Store
+      #   run: |
+      #     npx chrome-webstore-upload-cli publish \
+      #       --extension-id ${{ secrets.CHROME_EXTENSION_ID }} \
+      #       --client-id ${{ secrets.CHROME_CLIENT_ID }} \
+      #       --client-secret ${{ secrets.CHROME_CLIENT_SECRET }} \
+      #       --refresh-token ${{ secrets.CHROME_REFRESH_TOKEN }}

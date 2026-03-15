@@ -1,0 +1,76 @@
+name: Publish to Chrome Web Store
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to publish (e.g. v0.2.0)'
+        required: true
+        type: string
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Determine tag
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "RELEASE_TAG=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
+          else
+            echo "RELEASE_TAG=${{ inputs.tag }}" >> $GITHUB_ENV
+          fi
+
+      - name: Download extension ZIP from release
+        run: |
+          VERSION="${RELEASE_TAG#v}"
+          gh release download "$RELEASE_TAG" \
+            --pattern "request-interceptor-v${VERSION}.zip" \
+            --repo devkudasov/request-interceptor
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: List downloaded files
+        run: ls -la *.zip
+
+      # ──────────────────────────────────────────────────────
+      # Chrome Web Store Upload
+      # ──────────────────────────────────────────────────────
+      # TODO: To enable Chrome Web Store publishing:
+      #
+      # 1. Go to the Google Cloud Console and create OAuth 2.0 credentials
+      #    for the Chrome Web Store API.
+      #    See: https://developer.chrome.com/docs/webstore/using-api
+      #
+      # 2. Set up these repository secrets in GitHub:
+      #    Settings → Secrets and variables → Actions → New repository secret
+      #
+      #    - CHROME_EXTENSION_ID   → Your extension ID from the Chrome Web Store
+      #    - CHROME_CLIENT_ID      → OAuth 2.0 client ID from Google Cloud Console
+      #    - CHROME_CLIENT_SECRET  → OAuth 2.0 client secret
+      #    - CHROME_REFRESH_TOKEN  → Generated using the chrome-webstore-upload-cli:
+      #      npx chrome-webstore-upload-cli init \
+      #        --client-id <client_id> \
+      #        --client-secret <client_secret>
+      #
+      # 3. Uncomment the steps below:
+      #
+      # - name: Upload to Chrome Web Store
+      #   run: |
+      #     VERSION="${RELEASE_TAG#v}"
+      #     npx chrome-webstore-upload-cli upload \
+      #       --source "request-interceptor-v${VERSION}.zip" \
+      #       --extension-id ${{ secrets.CHROME_EXTENSION_ID }} \
+      #       --client-id ${{ secrets.CHROME_CLIENT_ID }} \
+      #       --client-secret ${{ secrets.CHROME_CLIENT_SECRET }} \
+      #       --refresh-token ${{ secrets.CHROME_REFRESH_TOKEN }}
+      #
+      # - name: Publish on Chrome Web Store
+      #   run: |
+      #     npx chrome-webstore-upload-cli publish \
+      #       --extension-id ${{ secrets.CHROME_EXTENSION_ID }} \
+      #       --client-id ${{ secrets.CHROME_CLIENT_ID }} \
+      #       --client-secret ${{ secrets.CHROME_CLIENT_SECRET }} \
+      #       --refresh-token ${{ secrets.CHROME_REFRESH_TOKEN }}

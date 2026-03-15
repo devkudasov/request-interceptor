@@ -4,27 +4,58 @@ import { installXHRInterceptor, uninstallXHRInterceptor, updateXHRRules } from '
 import { installWebSocketInterceptor, uninstallWebSocketInterceptor, updateWebSocketRules } from './websocket-interceptor';
 import type { MockRule } from '@/features/rules';
 
-// Install all interceptors
-installFetchInterceptor();
-installXHRInterceptor();
-installWebSocketInterceptor();
+let active = false;
 
-// Listen for rule updates from content script
+function activate() {
+  if (active) return;
+  active = true;
+  installFetchInterceptor();
+  installXHRInterceptor();
+  installWebSocketInterceptor();
+  console.log('[Request Interceptor] Interceptors activated');
+}
+
+function deactivate() {
+  if (!active) return;
+  active = false;
+  uninstallFetchInterceptor();
+  uninstallXHRInterceptor();
+  uninstallWebSocketInterceptor();
+  console.log('[Request Interceptor] Interceptors deactivated');
+}
+
+// Listen for activation/deactivation and rule updates from content script
 window.addEventListener('message', (event) => {
   if (event.source !== window) return;
-  if (event.data?.type !== `${MESSAGE_PREFIX}_RULES_UPDATE`) return;
 
-  const rules = event.data.payload as MockRule[];
-  updateFetchRules(rules);
-  updateXHRRules(rules);
-  updateWebSocketRules(rules);
+  const type = event.data?.type;
+  if (typeof type !== 'string' || !type.startsWith(MESSAGE_PREFIX)) return;
+
+  if (type === `${MESSAGE_PREFIX}_ACTIVATE`) {
+    activate();
+    return;
+  }
+
+  if (type === `${MESSAGE_PREFIX}_DEACTIVATE`) {
+    deactivate();
+    return;
+  }
+
+  if (type === `${MESSAGE_PREFIX}_RULES_UPDATE`) {
+    const rules = event.data.payload as MockRule[];
+    // Auto-activate when rules are received
+    activate();
+    updateFetchRules(rules);
+    updateXHRRules(rules);
+    updateWebSocketRules(rules);
+  }
 });
 
 // Cleanup on unload
 window.addEventListener('beforeunload', () => {
-  uninstallFetchInterceptor();
-  uninstallXHRInterceptor();
-  uninstallWebSocketInterceptor();
+  if (active) {
+    deactivate();
+  }
 });
 
-console.log('[Request Interceptor] Injected script loaded — fetch, XHR, WebSocket interceptors active');
+console.log('[Request Interceptor] Injected script loaded (dormant, waiting for activation)');

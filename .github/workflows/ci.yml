@@ -53,6 +53,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Sync version to manifest
+        run: node ../scripts/sync-version.js
+
       - name: Build extension
         run: npm run build
 
