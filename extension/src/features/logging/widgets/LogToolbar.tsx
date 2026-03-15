@@ -1,5 +1,5 @@
 import { Button } from '@/ui/common/Button';
-import { PauseIcon, PlayIcon, TrashIcon, XIcon } from '@/ui/icons';
+import { PauseIcon, PlayIcon, TrashIcon, CloseIcon } from '@/ui/icons';
 
 interface LogToolbarProps {
   paused: boolean;
@@ -40,7 +40,7 @@ export function LogToolbar({
           aria-label="Close"
           onClick={onClose}
         >
-          <XIcon />
+          <CloseIcon />
         </Button>
       </div>
     </div>
