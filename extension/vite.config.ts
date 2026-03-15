@@ -24,7 +24,6 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        popup: resolve(__dirname, 'src/popup/popup.html'),
         sidepanel: resolve(__dirname, 'src/sidepanel/sidepanel.html'),
       },
     },

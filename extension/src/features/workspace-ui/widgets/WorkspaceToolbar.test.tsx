@@ -13,9 +13,6 @@ const defaultProps = {
   onImport: vi.fn(),
   onExport: vi.fn(),
   hasCollections: true,
-  isRecording: false,
-  onRecordClick: vi.fn(),
-  onStopClick: vi.fn(),
 };
 
 describe('WorkspaceToolbar — layout', () => {
@@ -35,12 +32,6 @@ describe('WorkspaceToolbar — layout', () => {
     render(<WorkspaceToolbar {...defaultProps} />);
 
     expect(screen.getByRole('button', { name: /new rule/i })).toBeInTheDocument();
-  });
-
-  it('renders RecordButton (record button present)', () => {
-    render(<WorkspaceToolbar {...defaultProps} />);
-
-    expect(screen.getByRole('button', { name: /record/i })).toBeInTheDocument();
   });
 
   it('renders ToolbarOverflowMenu ("More actions" button present)', () => {

@@ -8,9 +8,7 @@ export const DEFAULT_SETTINGS: Settings = {
 };
 
 export const DEFAULT_STORAGE: StorageSchema = {
-  activeTabIds: [],
-  isRecording: false,
-  recordingTabId: null,
+  activeTabId: null,
   rules: [],
   collections: [],
   requestLog: [],
@@ -22,7 +20,7 @@ export const DEFAULT_STORAGE: StorageSchema = {
 export const MESSAGE_TYPES = {
   // Tab management
   GET_ACTIVE_TABS: 'GET_ACTIVE_TABS',
-  TOGGLE_TAB: 'TOGGLE_TAB',
+  SET_ACTIVE_TAB: 'SET_ACTIVE_TAB',
   TAB_STATUS_CHANGED: 'TAB_STATUS_CHANGED',
 
   // Rules
@@ -40,11 +38,6 @@ export const MESSAGE_TYPES = {
   UPDATE_COLLECTION: 'UPDATE_COLLECTION',
   DELETE_COLLECTION: 'DELETE_COLLECTION',
   TOGGLE_COLLECTION: 'TOGGLE_COLLECTION',
-
-  // Recording
-  START_RECORDING: 'START_RECORDING',
-  STOP_RECORDING: 'STOP_RECORDING',
-  RECORDING_DATA: 'RECORDING_DATA',
 
   // Request log
   LOG_ENTRY: 'LOG_ENTRY',
@@ -97,9 +90,7 @@ export const MESSAGE_TYPES = {
 } as const;
 
 export const STORAGE_KEYS = {
-  ACTIVE_TAB_IDS: 'activeTabIds',
-  IS_RECORDING: 'isRecording',
-  RECORDING_TAB_ID: 'recordingTabId',
+  ACTIVE_TAB_ID: 'activeTabId',
   RULES: 'rules',
   COLLECTIONS: 'collections',
   REQUEST_LOG: 'requestLog',

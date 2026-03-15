@@ -41,9 +41,7 @@ export interface Settings {
 }
 
 export interface StorageSchema {
-  activeTabIds: number[];
-  isRecording: boolean;
-  recordingTabId: number | null;
+  activeTabId: number | null;
   rules: MockRule[];
   collections: Collection[];
   requestLog: LogEntry[];

@@ -161,7 +161,7 @@ describe('message-flow integration', () => {
   describe('Rules CRUD round-trip', () => {
     it('create -> get -> update -> get -> delete -> get', async () => {
       mockStorage.rules = [];
-      mockStorage.activeTabIds = [];
+      mockStorage.activeTabId = null;
 
       // Create
       const rule = { id: 'r1', enabled: true, priority: 0, method: 'GET', urlPattern: '/api/test' };
@@ -191,7 +191,7 @@ describe('message-flow integration', () => {
 
     it('toggle flips enabled state twice to restore original', async () => {
       mockStorage.rules = [{ id: 'r1', enabled: true, priority: 0 }];
-      mockStorage.activeTabIds = [];
+      mockStorage.activeTabId = null;
 
       await sendMessage(MESSAGE_TYPES.TOGGLE_RULE, { id: 'r1' });
       let rules = (await sendMessage(MESSAGE_TYPES.GET_RULES)).data as Array<{ enabled: boolean }>;
@@ -211,7 +211,7 @@ describe('message-flow integration', () => {
     it('create -> get -> delete with rule cleanup', async () => {
       mockStorage.collections = [];
       mockStorage.rules = [{ id: 'r1', collectionId: null }];
-      mockStorage.activeTabIds = [];
+      mockStorage.activeTabId = null;
 
       // Create collection
       const col = { id: 'c1', name: 'Test Col', enabled: true };
@@ -306,32 +306,6 @@ describe('message-flow integration', () => {
   });
 
   // -----------------------------------------------------------------------
-  // Recording flow
-  // -----------------------------------------------------------------------
-
-  describe('Recording message flow', () => {
-    it('START_RECORDING -> STOP_RECORDING full cycle', async () => {
-      mockStorage.activeTabIds = [];
-      mockStorage.rules = [];
-      mockStorage.isRecording = false;
-      mockStorage.recordingTabId = null;
-
-      // Start
-      const startPromise = sendMessage(MESSAGE_TYPES.START_RECORDING, { tabId: 42 });
-      await vi.advanceTimersByTimeAsync(200);
-      const startRes = await startPromise;
-      expect(startRes.ok).toBe(true);
-      expect(mockStorage.isRecording).toBe(true);
-      expect(mockStorage.recordingTabId).toBe(42);
-
-      // Stop
-      const stopRes = await sendMessage(MESSAGE_TYPES.STOP_RECORDING);
-      expect(stopRes.ok).toBe(true);
-      expect(mockStorage.isRecording).toBe(false);
-    });
-  });
-
-  // -----------------------------------------------------------------------
   // Version history
   // -----------------------------------------------------------------------
 
@@ -404,7 +378,7 @@ describe('message-flow integration', () => {
         { id: 'r1', enabled: true, priority: 1 },
         { id: 'r2', enabled: false, priority: 0 },
       ];
-      mockStorage.activeTabIds = [10];
+      mockStorage.activeTabId = 10;
 
       await sendMessage(MESSAGE_TYPES.CREATE_RULE, { id: 'r3', enabled: true, priority: 2 });
 

@@ -1,9 +1,9 @@
-import { getStorage } from './storage';
 import { MESSAGE_TYPES } from '@/shared/constants';
 
-export async function injectInterceptor(tabId: number): Promise<void> {
+export async function setActiveTab(tabId: number): Promise<void> {
   try {
-    // Send activation message to the content script, which relays to MAIN world
+    await chrome.storage.local.set({ activeTabId: tabId });
+
     await chrome.tabs.sendMessage(tabId, {
       type: MESSAGE_TYPES.TAB_STATUS_CHANGED,
       payload: { enabled: true },
@@ -12,57 +12,63 @@ export async function injectInterceptor(tabId: number): Promise<void> {
     // Small delay to let activation propagate
     await new Promise((r) => setTimeout(r, 50));
 
-    // Send current rules to the tab
+    // Send current enabled rules to the tab
     await sendRulesToTab(tabId);
   } catch (err) {
-    console.error(`[Request Interceptor] Failed to activate tab ${tabId}:`, err);
+    console.error(`Failed to activate tab ${tabId}:`, err);
   }
 }
 
-export async function removeInterceptor(tabId: number): Promise<void> {
-  try {
-    await chrome.tabs.sendMessage(tabId, {
-      type: MESSAGE_TYPES.TAB_STATUS_CHANGED,
-      payload: { enabled: false },
-    });
-  } catch {
-    // Tab may have been closed already
+export async function clearActiveTab(): Promise<void> {
+  const result = await chrome.storage.local.get('activeTabId');
+  const currentTabId: number | null = result.activeTabId ?? null;
+
+  if (currentTabId !== null) {
+    try {
+      await chrome.tabs.sendMessage(currentTabId, {
+        type: MESSAGE_TYPES.TAB_STATUS_CHANGED,
+        payload: { enabled: false },
+      });
+    } catch {
+      // Tab may have been closed already
+    }
   }
+
+  await chrome.storage.local.set({ activeTabId: null });
 }
 
-async function sendRulesToTab(tabId: number): Promise<void> {
-  const rules = await getStorage('RULES');
-  const enabledRules = rules.filter((r) => r.enabled).sort((a, b) => a.priority - b.priority);
-
-  try {
-    await chrome.tabs.sendMessage(tabId, {
-      type: MESSAGE_TYPES.INJECT_RULES,
-      payload: enabledRules,
-    });
-  } catch {
-    // Content script may not be ready yet
-  }
+export async function getActiveTabId(): Promise<number | null> {
+  const result = await chrome.storage.local.get('activeTabId');
+  return result.activeTabId ?? null;
 }
 
-export function setupTabListeners() {
-  // Re-activate on navigation for active tabs
-  chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
-    if (changeInfo.status !== 'complete') return;
-
-    const activeTabIds = await getStorage('ACTIVE_TAB_IDS');
-    if (activeTabIds.includes(tabId)) {
-      await injectInterceptor(tabId);
+export function setupTabListeners(): void {
+  chrome.tabs.onRemoved.addListener(async (tabId: number) => {
+    const currentTabId = await getActiveTabId();
+    if (currentTabId === tabId) {
+      await chrome.storage.local.set({ activeTabId: null });
     }
   });
 
-  // Cleanup closed tabs
-  chrome.tabs.onRemoved.addListener(async (tabId) => {
-    const result = await chrome.storage.local.get('activeTabIds');
-    const activeTabIds: number[] = result.activeTabIds ?? [];
-    if (activeTabIds.includes(tabId)) {
-      await chrome.storage.local.set({
-        activeTabIds: activeTabIds.filter((id) => id !== tabId),
-      });
-    }
+  chrome.tabs.onUpdated.addListener(async (tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
+    if (changeInfo.status !== 'complete') return;
+
+    const currentTabId = await getActiveTabId();
+    if (currentTabId !== tabId) return;
+
+    await setActiveTab(tabId);
+  });
+}
+
+async function sendRulesToTab(tabId: number): Promise<void> {
+  const result = await chrome.storage.local.get('rules');
+  const rules = result.rules ?? [];
+  const enabledRules = rules
+    .filter((r: { enabled: boolean }) => r.enabled)
+    .sort((a: { priority: number }, b: { priority: number }) => a.priority - b.priority);
+
+  await chrome.tabs.sendMessage(tabId, {
+    type: MESSAGE_TYPES.INJECT_RULES,
+    payload: enabledRules,
   });
 }

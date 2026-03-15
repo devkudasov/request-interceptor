@@ -1,7 +1,6 @@
 import { Button } from '@/ui/common/Button';
 import { Input } from '@/ui/common/Input';
 import { Select } from '@/ui/common/Select';
-import { RecordButton } from '@/features/recording/widgets/RecordButton';
 import { ToolbarOverflowMenu } from './ToolbarOverflowMenu';
 
 const METHOD_OPTIONS = [
@@ -23,9 +22,6 @@ interface WorkspaceToolbarProps {
   onImport: () => void;
   onExport: () => void;
   hasCollections: boolean;
-  isRecording: boolean;
-  onRecordClick: () => void;
-  onStopClick: () => void;
 }
 
 export function WorkspaceToolbar({
@@ -38,9 +34,6 @@ export function WorkspaceToolbar({
   onImport,
   onExport,
   hasCollections,
-  isRecording,
-  onRecordClick,
-  onStopClick,
 }: WorkspaceToolbarProps) {
   return (
     <div className="flex flex-col gap-sm">
@@ -60,7 +53,6 @@ export function WorkspaceToolbar({
       </div>
       <div className="flex gap-xs items-center">
         <Button size="sm" onClick={onNewRule}>+ New Rule</Button>
-        <RecordButton isRecording={isRecording} onRecordClick={onRecordClick} onStopClick={onStopClick} />
         <div className="flex-1" />
         <ToolbarOverflowMenu
           onNewCollection={onNewCollection}

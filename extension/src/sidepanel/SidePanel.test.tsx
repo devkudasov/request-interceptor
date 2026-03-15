@@ -2,6 +2,21 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
+// Stub chrome APIs for tests that reference chrome global
+vi.stubGlobal('chrome', {
+  tabs: { query: vi.fn().mockResolvedValue([]) },
+  storage: {
+    local: { get: vi.fn(), set: vi.fn() },
+    onChanged: { addListener: vi.fn(), removeListener: vi.fn() },
+  },
+  runtime: {
+    id: 'test-extension-id',
+    lastError: null,
+    onMessage: { addListener: vi.fn() },
+    sendMessage: vi.fn(),
+  },
+});
+
 // Stub components that represent the expected route targets
 function WorkspacePage() { return <div data-testid="workspace-page">WorkspacePage</div>; }
 function RuleEditorPage() { return <div data-testid="rule-editor-page">RuleEditorPage</div>; }
@@ -178,15 +193,6 @@ vi.mock('@/features/sync', () => ({
   })),
 }));
 
-vi.mock('@/features/recording', () => ({
-  useRecordingStore: vi.fn(() => ({
-    isRecording: false,
-    recordedEntries: [],
-    startRecording: vi.fn(),
-    stopRecording: vi.fn(),
-  })),
-}));
-
 vi.mock('@/shared/stores', () => ({
   useTabsStore: vi.fn(() => ({
     tabs: [],
@@ -208,6 +214,20 @@ vi.mock('@/features/versions', () => ({
     fetchVersions: vi.fn(),
     restoreVersion: vi.fn(),
   })),
+}));
+
+vi.mock('@/shared/stores/active-tab', () => ({
+  useActiveTabStore: vi.fn((selector?: (state: unknown) => unknown) => {
+    const state = {
+      activeTabId: null,
+      tabs: [],
+      loading: false,
+      setActiveTab: vi.fn(),
+      clearActiveTab: vi.fn(),
+      fetchTabs: vi.fn(),
+    };
+    return selector ? selector(state) : state;
+  }),
 }));
 
 vi.mock('@/features/billing', () => ({
@@ -271,6 +291,51 @@ describe('SidePanel — layout: BottomBar', () => {
     expect(
       screen.getByRole('button', { name: /account/i }),
     ).toBeInTheDocument();
+  });
+});
+
+/* --- TabSelector integration --- */
+
+describe('SidePanel — TabSelector', () => {
+  it('renders TabSelector component', async () => {
+    const { SidePanel } = await import('./SidePanel');
+    render(<SidePanel />);
+
+    // TabSelector should render a combobox (select) for picking the active tab
+    expect(screen.getByRole('combobox', { name: /select active tab/i })).toBeInTheDocument();
+  });
+});
+
+/* --- No multi-tab activation --- */
+
+describe('SidePanel — no multi-tab activation', () => {
+  it('does not render activateInterceptorsOnActiveTabs logic', async () => {
+    // The old activateInterceptorsOnActiveTabs function that iterated over
+    // activeTabIds from storage and sent TAB_STATUS_CHANGED + INJECT_RULES
+    // to multiple tabs should be removed. The SidePanel module should NOT
+    // contain this function after TASK-159 implementation.
+    const sidePanelModule = await import('./SidePanel');
+    const moduleSource = Object.keys(sidePanelModule);
+
+    // The function should not be exported
+    expect(moduleSource).not.toContain('activateInterceptorsOnActiveTabs');
+
+    // Additionally, chrome.storage.local.get should NOT be called with 'activeTabIds'
+    // during SidePanel mount (the old multi-tab activation path)
+    const mockStorageGet = chrome.storage.local.get as ReturnType<typeof vi.fn>;
+    mockStorageGet.mockClear();
+
+    render(<sidePanelModule.SidePanel />);
+
+    // Wait for any effects to run
+    await new Promise((r) => setTimeout(r, 0));
+
+    // Verify no call to get 'activeTabIds' was made
+    const calls = mockStorageGet.mock.calls;
+    const activeTabIdsCalls = calls.filter(
+      (c: unknown[]) => c[0] === 'activeTabIds',
+    );
+    expect(activeTabIdsCalls).toHaveLength(0);
   });
 });
 

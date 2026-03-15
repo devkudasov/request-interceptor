@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { convertEntriesToRules } from './convertToRules';
+import { convertEntriesToRules } from '@/shared/utils/convertToRules';
 import type { LogEntry } from '@/features/logging/types';
 
 function makeLogEntry(overrides: Partial<LogEntry> = {}): LogEntry {

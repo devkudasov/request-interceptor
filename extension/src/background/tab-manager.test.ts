@@ -49,9 +49,9 @@ vi.mock('@/shared/constants', async () => {
   };
 });
 
-import { injectInterceptor, removeInterceptor, setupTabListeners } from './tab-manager';
+import { setActiveTab, clearActiveTab, getActiveTabId, setupTabListeners } from './tab-manager';
 
-describe('tab-manager', () => {
+describe('tab-manager (single-tab)', () => {
   beforeEach(() => {
     mockStorage = {};
     vi.clearAllMocks();
@@ -62,10 +62,19 @@ describe('tab-manager', () => {
     vi.useRealTimers();
   });
 
-  describe('injectInterceptor', () => {
-    it('sends TAB_STATUS_CHANGED activation message to the tab', async () => {
+  describe('setActiveTab', () => {
+    it('stores activeTabId in chrome.storage.local', async () => {
       mockStorage.rules = [];
-      const promise = injectInterceptor(5);
+      const promise = setActiveTab(5);
+      await vi.advanceTimersByTimeAsync(200);
+      await promise;
+
+      expect(mockStorage.activeTabId).toBe(5);
+    });
+
+    it('sends TAB_STATUS_CHANGED with enabled:true to the tab', async () => {
+      mockStorage.rules = [];
+      const promise = setActiveTab(5);
       await vi.advanceTimersByTimeAsync(200);
       await promise;
 
@@ -75,14 +84,14 @@ describe('tab-manager', () => {
       });
     });
 
-    it('sends rules to the tab after activation', async () => {
+    it('sends enabled rules sorted by priority to the tab', async () => {
       mockStorage.rules = [
         { id: 'r1', enabled: true, priority: 2 },
         { id: 'r2', enabled: false, priority: 1 },
         { id: 'r3', enabled: true, priority: 1 },
       ];
 
-      const promise = injectInterceptor(5);
+      const promise = setActiveTab(5);
       await vi.advanceTimersByTimeAsync(200);
       await promise;
 
@@ -95,13 +104,13 @@ describe('tab-manager', () => {
       });
     });
 
-    it('filters out disabled rules when sending', async () => {
+    it('sends empty rules array when all rules are disabled', async () => {
       mockStorage.rules = [
         { id: 'r1', enabled: false, priority: 0 },
         { id: 'r2', enabled: false, priority: 1 },
       ];
 
-      const promise = injectInterceptor(5);
+      const promise = setActiveTab(5);
       await vi.advanceTimersByTimeAsync(200);
       await promise;
 
@@ -117,7 +126,7 @@ describe('tab-manager', () => {
       );
 
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      const promise = injectInterceptor(5);
+      const promise = setActiveTab(5);
       await vi.advanceTimersByTimeAsync(200);
       await promise;
 
@@ -127,24 +136,13 @@ describe('tab-manager', () => {
       );
       consoleSpy.mockRestore();
     });
-
-    it('handles sendRules failure gracefully', async () => {
-      mockStorage.rules = [{ id: 'r1', enabled: true, priority: 0 }];
-      // First call (TAB_STATUS_CHANGED) succeeds, second (INJECT_RULES) fails
-      (chrome.tabs.sendMessage as ReturnType<typeof vi.fn>)
-        .mockResolvedValueOnce(undefined)
-        .mockRejectedValueOnce(new Error('No receiver'));
-
-      const promise = injectInterceptor(5);
-      await vi.advanceTimersByTimeAsync(200);
-
-      await expect(promise).resolves.toBeUndefined();
-    });
   });
 
-  describe('removeInterceptor', () => {
-    it('sends TAB_STATUS_CHANGED deactivation message', async () => {
-      await removeInterceptor(10);
+  describe('clearActiveTab', () => {
+    it('sends TAB_STATUS_CHANGED with enabled:false to the previously active tab', async () => {
+      mockStorage.activeTabId = 10;
+
+      await clearActiveTab();
 
       expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(10, {
         type: 'TAB_STATUS_CHANGED',
@@ -152,12 +150,47 @@ describe('tab-manager', () => {
       });
     });
 
-    it('handles errors when tab is already closed', async () => {
+    it('stores null as activeTabId in storage', async () => {
+      mockStorage.activeTabId = 10;
+
+      await clearActiveTab();
+
+      expect(mockStorage.activeTabId).toBeNull();
+    });
+
+    it('does not send message when no tab was active', async () => {
+      mockStorage.activeTabId = null;
+
+      await clearActiveTab();
+
+      expect(chrome.tabs.sendMessage).not.toHaveBeenCalled();
+      expect(mockStorage.activeTabId).toBeNull();
+    });
+
+    it('handles errors when the previously active tab is already closed', async () => {
+      mockStorage.activeTabId = 10;
       (chrome.tabs.sendMessage as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
         new Error('Tab not found'),
       );
 
-      await expect(removeInterceptor(10)).resolves.toBeUndefined();
+      await expect(clearActiveTab()).resolves.toBeUndefined();
+      expect(mockStorage.activeTabId).toBeNull();
+    });
+  });
+
+  describe('getActiveTabId', () => {
+    it('returns activeTabId from storage', async () => {
+      mockStorage.activeTabId = 42;
+
+      const result = await getActiveTabId();
+
+      expect(result).toBe(42);
+    });
+
+    it('returns null when no active tab is set', async () => {
+      const result = await getActiveTabId();
+
+      expect(result).toBeNull();
     });
   });
 
@@ -174,9 +207,52 @@ describe('tab-manager', () => {
       expect(mockOnRemovedAddListener.mock.calls[0][0]).toBeTypeOf('function');
     });
 
+    describe('onRemoved listener', () => {
+      it('clears activeTabId when the active tab is closed', async () => {
+        mockStorage.activeTabId = 10;
+
+        setupTabListeners();
+        const onRemovedHandler = mockOnRemovedAddListener.mock.calls[0][0];
+
+        await onRemovedHandler(10);
+
+        expect(mockStorage.activeTabId).toBeNull();
+      });
+
+      it('does nothing when a non-active tab is closed', async () => {
+        mockStorage.activeTabId = 10;
+
+        setupTabListeners();
+        const onRemovedHandler = mockOnRemovedAddListener.mock.calls[0][0];
+
+        await onRemovedHandler(99);
+
+        expect(mockStorage.activeTabId).toBe(10);
+        // storage.set should not have been called to change activeTabId
+        const setCalls = (chrome.storage.local.set as ReturnType<typeof vi.fn>).mock.calls;
+        const activeTabIdUpdates = setCalls.filter(
+          (call) => 'activeTabId' in call[0],
+        );
+        expect(activeTabIdUpdates).toHaveLength(0);
+      });
+
+      it('does nothing when no tab is active', async () => {
+        setupTabListeners();
+        const onRemovedHandler = mockOnRemovedAddListener.mock.calls[0][0];
+
+        await onRemovedHandler(5);
+
+        const setCalls = (chrome.storage.local.set as ReturnType<typeof vi.fn>).mock.calls;
+        const activeTabIdUpdates = setCalls.filter(
+          (call) => 'activeTabId' in call[0],
+        );
+        expect(activeTabIdUpdates).toHaveLength(0);
+      });
+    });
+
     describe('onUpdated listener', () => {
-      it('re-activates interceptor when active tab completes loading', async () => {
-        mockStorage.activeTabIds = [5, 10];
+      it('re-injects interceptor when active tab completes loading (URL change)', async () => {
+        mockStorage.activeTabId = 5;
         mockStorage.rules = [];
 
         setupTabListeners();
@@ -193,7 +269,7 @@ describe('tab-manager', () => {
       });
 
       it('ignores non-complete status changes', async () => {
-        mockStorage.activeTabIds = [5];
+        mockStorage.activeTabId = 5;
 
         setupTabListeners();
         const onUpdatedHandler = mockOnUpdatedAddListener.mock.calls[0][0];
@@ -203,8 +279,8 @@ describe('tab-manager', () => {
         expect(chrome.tabs.sendMessage).not.toHaveBeenCalled();
       });
 
-      it('ignores tabs not in active list', async () => {
-        mockStorage.activeTabIds = [10];
+      it('ignores updates for non-active tabs', async () => {
+        mockStorage.activeTabId = 10;
 
         setupTabListeners();
         const onUpdatedHandler = mockOnUpdatedAddListener.mock.calls[0][0];
@@ -215,7 +291,7 @@ describe('tab-manager', () => {
       });
 
       it('ignores when changeInfo has no status', async () => {
-        mockStorage.activeTabIds = [5];
+        mockStorage.activeTabId = 5;
 
         setupTabListeners();
         const onUpdatedHandler = mockOnUpdatedAddListener.mock.calls[0][0];
@@ -224,40 +300,14 @@ describe('tab-manager', () => {
 
         expect(chrome.tabs.sendMessage).not.toHaveBeenCalled();
       });
-    });
 
-    describe('onRemoved listener', () => {
-      it('removes closed tab from active list', async () => {
-        mockStorage.activeTabIds = [5, 10, 15];
-
+      it('ignores when no tab is active', async () => {
         setupTabListeners();
-        const onRemovedHandler = mockOnRemovedAddListener.mock.calls[0][0];
+        const onUpdatedHandler = mockOnUpdatedAddListener.mock.calls[0][0];
 
-        await onRemovedHandler(10);
+        await onUpdatedHandler(5, { status: 'complete' });
 
-        expect(chrome.storage.local.set).toHaveBeenCalledWith({
-          activeTabIds: [5, 15],
-        });
-      });
-
-      it('does nothing if closed tab is not in active list', async () => {
-        mockStorage.activeTabIds = [5, 15];
-
-        setupTabListeners();
-        const onRemovedHandler = mockOnRemovedAddListener.mock.calls[0][0];
-
-        await onRemovedHandler(99);
-
-        expect(chrome.storage.local.set).not.toHaveBeenCalled();
-      });
-
-      it('handles empty active tab list', async () => {
-        setupTabListeners();
-        const onRemovedHandler = mockOnRemovedAddListener.mock.calls[0][0];
-
-        await onRemovedHandler(5);
-
-        expect(chrome.storage.local.set).not.toHaveBeenCalled();
+        expect(chrome.tabs.sendMessage).not.toHaveBeenCalled();
       });
     });
   });

@@ -29,20 +29,6 @@ const collection: Collection = {
   order: 0, ruleIds: ['r1', 'r2'], createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
 };
 
-const mockTabs: chrome.tabs.Tab[] = [
-  {
-    id: 101, title: 'Example App', url: 'https://example.com',
-    index: 0, pinned: false, highlighted: false, active: true,
-    incognito: false, selected: false, windowId: 1,
-    discarded: false, autoDiscardable: true, groupId: -1,
-  },
-  {
-    id: 102, title: 'Other Tab', url: 'https://other.com',
-    index: 1, pinned: false, highlighted: false, active: false,
-    incognito: false, selected: false, windowId: 1,
-    discarded: false, autoDiscardable: true, groupId: -1,
-  },
-];
 
 const logEntries: LogEntry[] = [
   {
@@ -126,8 +112,6 @@ vi.mock('@/shared/constants', async () => {
 // Lazy imports — AFTER all vi.mock calls
 // ---------------------------------------------------------------------------
 
-const { RecordButton } = await import('@/features/recording/widgets/RecordButton');
-const { RecordPopover } = await import('@/features/recording/widgets/RecordPopover');
 const { AccountButton } = await import('@/features/auth/widgets/AccountButton');
 const { PlanCard } = await import('@/features/billing/widgets/PlanCard');
 const { PlanComparisonTable } = await import('@/features/billing/widgets/PlanComparisonTable');
@@ -145,51 +129,6 @@ beforeEach(() => {
   vi.clearAllMocks();
   authStoreState = { user: null, loading: false, error: null };
   logStoreState = { entries: [], paused: false };
-});
-
-// ===========================================================================
-// Recording flow: RecordButton + RecordPopover
-// ===========================================================================
-
-describe('Recording composition: RecordButton + RecordPopover', () => {
-  it('renders RecordButton in idle state and shows Record label', () => {
-    const { container } = render(
-      <RecordButton isRecording={false} onRecordClick={vi.fn()} onStopClick={vi.fn()} />,
-    );
-    expect(screen.getByText('Record')).toBeInTheDocument();
-    expect(container.innerHTML).toMatchSnapshot();
-  });
-
-  it('renders RecordButton in recording state with stop', () => {
-    const { container } = render(
-      <RecordButton isRecording={true} onRecordClick={vi.fn()} onStopClick={vi.fn()} />,
-    );
-    expect(screen.getByText('Recording...')).toBeInTheDocument();
-    expect(screen.getByText('Stop')).toBeInTheDocument();
-    expect(container.innerHTML).toMatchSnapshot();
-  });
-
-  it('RecordPopover shows tabs and allows starting recording', async () => {
-    const onStart = vi.fn();
-    const onClose = vi.fn();
-    const user = userEvent.setup();
-
-    render(<RecordPopover tabs={mockTabs} onStartRecording={onStart} onClose={onClose} />);
-
-    expect(screen.getByText('Example App')).toBeInTheDocument();
-    expect(screen.getByText('Other Tab')).toBeInTheDocument();
-
-    await user.click(screen.getByText('Start Recording'));
-    expect(onStart).toHaveBeenCalledWith(101);
-  });
-
-  it('RecordPopover shows empty state when no tabs', () => {
-    const { container } = render(
-      <RecordPopover tabs={[]} onStartRecording={vi.fn()} onClose={vi.fn()} />,
-    );
-    expect(screen.getByText('No tabs available')).toBeInTheDocument();
-    expect(container.innerHTML).toMatchSnapshot();
-  });
 });
 
 // ===========================================================================

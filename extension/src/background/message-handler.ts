@@ -1,7 +1,7 @@
 import { MESSAGE_TYPES } from '@/shared/constants';
 import { getStorage, setStorage, updateStorage } from './storage';
 import { addLogEntry, clearLog as clearLogEntries } from './logger';
-import { startRecording, stopRecording, addRecordedResponse, getRecordedResponses, isRecording, getRecordingTabId } from './recorder';
+import { setActiveTab, clearActiveTab, getActiveTabId } from './tab-manager';
 import type { MockRule } from '@/features/rules';
 import type { Collection } from '@/features/collections';
 import type { LogEntry } from '@/features/logging';
@@ -80,30 +80,16 @@ export function setupMessageHandler() {
 function registerHandlers() {
   // --- Tab management ---
   registerHandler(MESSAGE_TYPES.GET_ACTIVE_TABS, async () => {
-    return getStorage('ACTIVE_TAB_IDS');
+    return getActiveTabId();
   });
 
-  registerHandler(MESSAGE_TYPES.TOGGLE_TAB, async (payload) => {
-    const { tabId, enabled } = payload as { tabId: number; enabled: boolean };
-    const result = await updateStorage('ACTIVE_TAB_IDS', (tabs) => {
-      if (enabled && !tabs.includes(tabId)) {
-        return [...tabs, tabId];
-      }
-      if (!enabled) {
-        return tabs.filter((id) => id !== tabId);
-      }
-      return tabs;
-    });
-
-    if (enabled) {
-      const { injectInterceptor } = await import('./tab-manager');
-      await injectInterceptor(tabId);
+  registerHandler(MESSAGE_TYPES.SET_ACTIVE_TAB, async (payload) => {
+    const { tabId } = payload as { tabId: number | null };
+    if (tabId === null) {
+      await clearActiveTab();
     } else {
-      const { removeInterceptor } = await import('./tab-manager');
-      await removeInterceptor(tabId);
+      await setActiveTab(tabId);
     }
-
-    return result;
   });
 
   // --- Rules ---
@@ -114,7 +100,7 @@ function registerHandlers() {
   registerHandler(MESSAGE_TYPES.CREATE_RULE, async (payload) => {
     const rule = payload as MockRule;
     await updateStorage('RULES', (rules) => [...rules, rule]);
-    await broadcastRulesToActiveTabs();
+    await broadcastRulesToActiveTab();
     return rule;
   });
 
@@ -123,13 +109,13 @@ function registerHandlers() {
     await updateStorage('RULES', (rules) =>
       rules.map((r) => (r.id === id ? { ...r, ...changes, updatedAt: new Date().toISOString() } : r)),
     );
-    await broadcastRulesToActiveTabs();
+    await broadcastRulesToActiveTab();
   });
 
   registerHandler(MESSAGE_TYPES.DELETE_RULE, async (payload) => {
     const { id } = payload as { id: string };
     await updateStorage('RULES', (rules) => rules.filter((r) => r.id !== id));
-    await broadcastRulesToActiveTabs();
+    await broadcastRulesToActiveTab();
   });
 
   registerHandler(MESSAGE_TYPES.TOGGLE_RULE, async (payload) => {
@@ -137,7 +123,7 @@ function registerHandlers() {
     await updateStorage('RULES', (rules) =>
       rules.map((r) => (r.id === id ? { ...r, enabled: !r.enabled, updatedAt: new Date().toISOString() } : r)),
     );
-    await broadcastRulesToActiveTabs();
+    await broadcastRulesToActiveTab();
   });
 
   registerHandler(MESSAGE_TYPES.REORDER_RULES, async (payload) => {
@@ -151,7 +137,7 @@ function registerHandlers() {
         })
         .filter((r): r is MockRule => r !== null);
     });
-    await broadcastRulesToActiveTabs();
+    await broadcastRulesToActiveTab();
   });
 
   // --- Collections ---
@@ -197,22 +183,13 @@ function registerHandlers() {
     await updateStorage('RULES', (rules) =>
       rules.map((r) => (r.collectionId === id ? { ...r, enabled: newEnabled } : r)),
     );
-    await broadcastRulesToActiveTabs();
+    await broadcastRulesToActiveTab();
   });
 
   // --- Log ---
   registerHandler(MESSAGE_TYPES.LOG_ENTRY, async (payload, sender) => {
     const data = payload as Omit<LogEntry, 'id' | 'timestamp'>;
     const entry = await addLogEntry({ ...data, tabId: sender.tab?.id ?? 0 });
-
-    // If recording, also buffer the response
-    const recording = await isRecording();
-    if (recording) {
-      const recordingTabId = await getRecordingTabId();
-      if (sender.tab?.id === recordingTabId && !data.mocked) {
-        addRecordedResponse(entry);
-      }
-    }
 
     // Broadcast to side panel for real-time updates
     chrome.runtime.sendMessage({ type: MESSAGE_TYPES.LOG_ENTRY, payload: entry }).catch(() => {
@@ -224,30 +201,6 @@ function registerHandlers() {
 
   registerHandler(MESSAGE_TYPES.CLEAR_LOG, async () => {
     await clearLogEntries();
-  });
-
-  // --- Recording ---
-  registerHandler(MESSAGE_TYPES.START_RECORDING, async (payload) => {
-    const { tabId } = payload as { tabId: number };
-
-    // Ensure the tab is active so the interceptor is injected
-    const activeTabIds = await getStorage('ACTIVE_TAB_IDS');
-    if (!activeTabIds.includes(tabId)) {
-      await updateStorage('ACTIVE_TAB_IDS', (tabs) => [...tabs, tabId]);
-    }
-
-    // Inject interceptor and start recording
-    const { injectInterceptor } = await import('./tab-manager');
-    await injectInterceptor(tabId);
-    await startRecording(tabId);
-  });
-
-  registerHandler(MESSAGE_TYPES.STOP_RECORDING, async () => {
-    return stopRecording();
-  });
-
-  registerHandler(MESSAGE_TYPES.RECORDING_DATA, async () => {
-    return getRecordedResponses();
   });
 
   // --- Auth ---
@@ -435,24 +388,25 @@ function registerHandlers() {
   });
 }
 
-async function broadcastRulesToActiveTabs() {
-  const [rules, activeTabIds] = await Promise.all([
+async function broadcastRulesToActiveTab() {
+  const [rules, activeTabResult] = await Promise.all([
     getStorage('RULES'),
-    getStorage('ACTIVE_TAB_IDS'),
+    chrome.storage.local.get('activeTabId'),
   ]);
+
+  const activeTabId: number | null = activeTabResult.activeTabId ?? null;
+  if (activeTabId === null) return;
 
   const enabledRules = rules
     .filter((r) => r.enabled)
     .sort((a, b) => a.priority - b.priority);
 
-  for (const tabId of activeTabIds) {
-    try {
-      await chrome.tabs.sendMessage(tabId, {
-        type: MESSAGE_TYPES.INJECT_RULES,
-        payload: enabledRules,
-      });
-    } catch {
-      // Tab may have been closed
-    }
+  try {
+    await chrome.tabs.sendMessage(activeTabId, {
+      type: MESSAGE_TYPES.INJECT_RULES,
+      payload: enabledRules,
+    });
+  } catch {
+    // Tab may have been closed
   }
 }

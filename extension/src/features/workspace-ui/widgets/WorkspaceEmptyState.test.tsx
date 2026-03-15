@@ -6,7 +6,6 @@ import { WorkspaceEmptyState } from './WorkspaceEmptyState';
 const defaultProps = {
   onCreateRule: vi.fn(),
   onCreateCollection: vi.fn(),
-  onRecord: vi.fn(),
 };
 
 describe('WorkspaceEmptyState', () => {
@@ -28,12 +27,6 @@ describe('WorkspaceEmptyState', () => {
     expect(screen.getByRole('button', { name: /create collection/i })).toBeInTheDocument();
   });
 
-  it('renders Record CTA button', () => {
-    render(<WorkspaceEmptyState {...defaultProps} />);
-
-    expect(screen.getByRole('button', { name: /record/i })).toBeInTheDocument();
-  });
-
   it('calls onCreateRule when Create Rule is clicked', async () => {
     const user = userEvent.setup();
     const onCreateRule = vi.fn();
@@ -52,16 +45,6 @@ describe('WorkspaceEmptyState', () => {
     await user.click(screen.getByRole('button', { name: /create collection/i }));
 
     expect(onCreateCollection).toHaveBeenCalled();
-  });
-
-  it('calls onRecord when Record button is clicked', async () => {
-    const user = userEvent.setup();
-    const onRecord = vi.fn();
-    render(<WorkspaceEmptyState {...defaultProps} onRecord={onRecord} />);
-
-    await user.click(screen.getByRole('button', { name: /record/i }));
-
-    expect(onRecord).toHaveBeenCalled();
   });
 
   it('renders helpful description text', () => {
