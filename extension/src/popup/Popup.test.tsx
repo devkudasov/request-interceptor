@@ -57,6 +57,7 @@ vi.stubGlobal('chrome', {
 import { Popup } from './Popup';
 
 beforeEach(() => {
+  window.close = vi.fn();
   vi.clearAllMocks();
   tabsStoreState = {
     tabs: [],
@@ -202,10 +203,10 @@ describe('Popup — action buttons', () => {
     expect(screen.getByText('Open Editor')).toBeInTheDocument();
   });
 
-  it('renders "Request Log" button', () => {
+  it('renders "Request Logs" button', () => {
     render(<Popup />);
 
-    expect(screen.getByText('Request Log')).toBeInTheDocument();
+    expect(screen.getByText('Request Logs')).toBeInTheDocument();
   });
 
   it('opens side panel when "Open Editor" is clicked', async () => {
@@ -218,12 +219,12 @@ describe('Popup — action buttons', () => {
     expect(mockSidePanelOpen).toHaveBeenCalledWith({ windowId: -2 });
   });
 
-  it('opens side panel when "Request Log" is clicked', async () => {
+  it('opens side panel when "Request Logs" is clicked', async () => {
     const user = userEvent.setup();
 
     render(<Popup />);
 
-    await user.click(screen.getByText('Request Log'));
+    await user.click(screen.getByText('Request Logs'));
 
     expect(mockSidePanelOpen).toHaveBeenCalledWith({ windowId: -2 });
   });

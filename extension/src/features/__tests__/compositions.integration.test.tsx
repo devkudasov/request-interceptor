@@ -386,19 +386,23 @@ describe('Logging composition: LogPanel + LogEntryList + LogToolbar', () => {
     logStoreState.paused = false;
 
     const { container } = render(
-      <LogPanel isOpen={true} onClose={vi.fn()} />,
+      <MemoryRouter>
+        <LogPanel isOpen={true} onClose={vi.fn()} />
+      </MemoryRouter>,
     );
 
-    expect(screen.getByText('Log')).toBeInTheDocument();
-    expect(screen.getByText('Pause')).toBeInTheDocument();
-    expect(screen.getByText('Clear')).toBeInTheDocument();
+    expect(screen.getByText('Logs')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /pause/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /clear/i })).toBeInTheDocument();
     expect(screen.getByText('https://api.example.com/users')).toBeInTheDocument();
     expect(container.innerHTML).toMatchSnapshot();
   });
 
   it('LogPanel returns null when closed', () => {
     const { container } = render(
-      <LogPanel isOpen={false} onClose={vi.fn()} />,
+      <MemoryRouter>
+        <LogPanel isOpen={false} onClose={vi.fn()} />
+      </MemoryRouter>,
     );
     expect(container.innerHTML).toBe('');
   });
@@ -418,21 +422,21 @@ describe('Logging composition: LogPanel + LogEntryList + LogToolbar', () => {
       <LogToolbar paused={false} onTogglePause={onTogglePause} onClear={onClear} onClose={onClose} />,
     );
 
-    await user.click(screen.getByText('Pause'));
+    await user.click(screen.getByRole('button', { name: /pause/i }));
     expect(onTogglePause).toHaveBeenCalled();
 
-    await user.click(screen.getByText('Clear'));
+    await user.click(screen.getByRole('button', { name: /clear/i }));
     expect(onClear).toHaveBeenCalled();
 
-    await user.click(screen.getByText('Close'));
+    await user.click(screen.getByRole('button', { name: /close/i }));
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('LogEntryList renders entries with mocked/real badges', () => {
+  it('LogEntryList renders entries with mocked/real icons', () => {
     const { container } = render(<LogEntryList entries={logEntries} />);
 
-    expect(screen.getByText('MOCKED')).toBeInTheDocument();
-    expect(screen.getByText('REAL')).toBeInTheDocument();
+    expect(screen.getByText('https://api.example.com/users')).toBeInTheDocument();
+    expect(screen.getByText('https://api.example.com/posts')).toBeInTheDocument();
     expect(container.innerHTML).toMatchSnapshot();
   });
 });

@@ -260,7 +260,7 @@ describe('SidePanel — layout: BottomBar', () => {
     render(<SidePanel />);
 
     expect(
-      screen.getByRole('button', { name: /toggle log panel/i }),
+      screen.getByRole('button', { name: /toggle logs panel/i }),
     ).toBeInTheDocument();
   });
 
@@ -289,7 +289,7 @@ describe('SidePanel — layout: LogPanel', () => {
     // content should appear. For now we verify the toggle exists which
     // implies LogPanel is wired up.
     expect(
-      screen.getByRole('button', { name: /toggle log panel/i }),
+      screen.getByRole('button', { name: /toggle logs panel/i }),
     ).toBeInTheDocument();
 
     // Verify the main content area still renders

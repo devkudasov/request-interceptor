@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { LogPanel } from './LogPanel';
 import type { LogEntry } from '@/features/logging';
 
@@ -44,7 +45,9 @@ vi.mock('@/features/logging', () => ({
 
 function renderPanel(props: { isOpen: boolean; onClose?: () => void }) {
   return render(
-    <LogPanel isOpen={props.isOpen} onClose={props.onClose ?? vi.fn()} />,
+    <MemoryRouter>
+      <LogPanel isOpen={props.isOpen} onClose={props.onClose ?? vi.fn()} />
+    </MemoryRouter>,
   );
 }
 
@@ -57,13 +60,13 @@ beforeEach(() => {
 describe('LogPanel', () => {
   it('does NOT render content when closed', () => {
     renderPanel({ isOpen: false });
-    expect(screen.queryByText('Log')).not.toBeInTheDocument();
+    expect(screen.queryByText('Logs')).not.toBeInTheDocument();
     expect(screen.queryByText('GET')).not.toBeInTheDocument();
   });
 
   it('renders toolbar and entries when open', () => {
     renderPanel({ isOpen: true });
-    expect(screen.getByText('Log')).toBeInTheDocument();
+    expect(screen.getByText('Logs')).toBeInTheDocument();
     expect(screen.getByText('GET')).toBeInTheDocument();
   });
 
@@ -82,7 +85,7 @@ describe('LogPanel', () => {
 
   it('delegates entry rendering to LogEntryList', () => {
     renderPanel({ isOpen: true });
-    expect(screen.getByText('MOCKED')).toBeInTheDocument();
     expect(screen.getByText('200')).toBeInTheDocument();
+    expect(screen.getByText('https://api.example.com/users')).toBeInTheDocument();
   });
 });
