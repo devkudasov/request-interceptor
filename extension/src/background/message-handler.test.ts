@@ -29,7 +29,7 @@ vi.stubGlobal('chrome', {
         messageListenerCallback = cb;
       }),
     },
-    sendMessage: vi.fn(),
+    sendMessage: vi.fn(() => Promise.resolve()),
     id: 'test-extension-id',
     getURL: vi.fn((path: string) => `chrome-extension://test-id/${path}`),
   },
@@ -94,6 +94,7 @@ vi.mock('./firestore-versions', () => ({
 
 vi.mock('./tab-manager', () => ({
   injectInterceptor: vi.fn(() => Promise.resolve()),
+  removeInterceptor: vi.fn(() => Promise.resolve()),
 }));
 
 import { setupMessageHandler } from './message-handler';

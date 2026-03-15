@@ -85,7 +85,7 @@ function registerHandlers() {
 
   registerHandler(MESSAGE_TYPES.TOGGLE_TAB, async (payload) => {
     const { tabId, enabled } = payload as { tabId: number; enabled: boolean };
-    return updateStorage('ACTIVE_TAB_IDS', (tabs) => {
+    const result = await updateStorage('ACTIVE_TAB_IDS', (tabs) => {
       if (enabled && !tabs.includes(tabId)) {
         return [...tabs, tabId];
       }
@@ -94,6 +94,16 @@ function registerHandlers() {
       }
       return tabs;
     });
+
+    if (enabled) {
+      const { injectInterceptor } = await import('./tab-manager');
+      await injectInterceptor(tabId);
+    } else {
+      const { removeInterceptor } = await import('./tab-manager');
+      await removeInterceptor(tabId);
+    }
+
+    return result;
   });
 
   // --- Rules ---
@@ -205,11 +215,9 @@ function registerHandlers() {
     }
 
     // Broadcast to side panel for real-time updates
-    try {
-      chrome.runtime.sendMessage({ type: MESSAGE_TYPES.LOG_ENTRY, payload: entry });
-    } catch {
-      // Side panel may not be open
-    }
+    chrome.runtime.sendMessage({ type: MESSAGE_TYPES.LOG_ENTRY, payload: entry }).catch(() => {
+      // Side panel may not be open — ignore
+    });
 
     return entry;
   });
