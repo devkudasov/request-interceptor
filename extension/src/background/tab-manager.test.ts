@@ -55,7 +55,6 @@ describe('tab-manager', () => {
   beforeEach(() => {
     mockStorage = {};
     vi.clearAllMocks();
-    // Mock setTimeout to avoid real delays
     vi.useFakeTimers();
   });
 
@@ -64,34 +63,19 @@ describe('tab-manager', () => {
   });
 
   describe('injectInterceptor', () => {
-    it('executes content script first', async () => {
+    it('sends TAB_STATUS_CHANGED activation message to the tab', async () => {
       mockStorage.rules = [];
       const promise = injectInterceptor(5);
       await vi.advanceTimersByTimeAsync(200);
       await promise;
 
-      const calls = (chrome.scripting.executeScript as ReturnType<typeof vi.fn>).mock.calls;
-      expect(calls[0][0]).toEqual({
-        target: { tabId: 5 },
-        files: ['src/content/index.ts'],
+      expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(5, {
+        type: 'TAB_STATUS_CHANGED',
+        payload: { enabled: true },
       });
     });
 
-    it('executes the MAIN world interceptor injection', async () => {
-      mockStorage.rules = [];
-      const promise = injectInterceptor(5);
-      await vi.advanceTimersByTimeAsync(200);
-      await promise;
-
-      const calls = (chrome.scripting.executeScript as ReturnType<typeof vi.fn>).mock.calls;
-      expect(calls[1][0]).toEqual(expect.objectContaining({
-        target: { tabId: 5 },
-        args: ['chrome-extension://test-id/src/injected/index.ts'],
-      }));
-      expect(calls[1][0].func).toBeTypeOf('function');
-    });
-
-    it('sends rules to the tab after injection', async () => {
+    it('sends rules to the tab after activation', async () => {
       mockStorage.rules = [
         { id: 'r1', enabled: true, priority: 2 },
         { id: 'r2', enabled: false, priority: 1 },
@@ -127,23 +111,10 @@ describe('tab-manager', () => {
       });
     });
 
-    it('handles content script injection failure gracefully', async () => {
-      (chrome.scripting.executeScript as ReturnType<typeof vi.fn>)
-        .mockRejectedValueOnce(new Error('Cannot inject'))
-        .mockResolvedValueOnce(undefined);
-
-      mockStorage.rules = [];
-      const promise = injectInterceptor(5);
-      await vi.advanceTimersByTimeAsync(200);
-
-      // Should not throw
-      await expect(promise).resolves.toBeUndefined();
-    });
-
-    it('handles MAIN world injection failure gracefully', async () => {
-      (chrome.scripting.executeScript as ReturnType<typeof vi.fn>)
-        .mockResolvedValueOnce(undefined)
-        .mockRejectedValueOnce(new Error('Tab closed'));
+    it('handles activation failure gracefully', async () => {
+      (chrome.tabs.sendMessage as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+        new Error('Tab not found'),
+      );
 
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       const promise = injectInterceptor(5);
@@ -151,38 +122,38 @@ describe('tab-manager', () => {
       await promise;
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Failed to inject into tab 5'),
+        expect.stringContaining('Failed to activate tab 5'),
         expect.any(Error),
       );
       consoleSpy.mockRestore();
     });
 
-    it('handles sendMessage failure gracefully', async () => {
+    it('handles sendRules failure gracefully', async () => {
       mockStorage.rules = [{ id: 'r1', enabled: true, priority: 0 }];
-      (chrome.tabs.sendMessage as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('No receiver'));
+      // First call (TAB_STATUS_CHANGED) succeeds, second (INJECT_RULES) fails
+      (chrome.tabs.sendMessage as ReturnType<typeof vi.fn>)
+        .mockResolvedValueOnce(undefined)
+        .mockRejectedValueOnce(new Error('No receiver'));
 
       const promise = injectInterceptor(5);
       await vi.advanceTimersByTimeAsync(200);
 
-      // Should not throw
       await expect(promise).resolves.toBeUndefined();
     });
   });
 
   describe('removeInterceptor', () => {
-    it('executes script in MAIN world to remove interceptor', async () => {
+    it('sends TAB_STATUS_CHANGED deactivation message', async () => {
       await removeInterceptor(10);
 
-      expect(chrome.scripting.executeScript).toHaveBeenCalledWith(
-        expect.objectContaining({
-          target: { tabId: 10 },
-          world: 'MAIN',
-        }),
-      );
+      expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(10, {
+        type: 'TAB_STATUS_CHANGED',
+        payload: { enabled: false },
+      });
     });
 
     it('handles errors when tab is already closed', async () => {
-      (chrome.scripting.executeScript as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      (chrome.tabs.sendMessage as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
         new Error('Tab not found'),
       );
 
@@ -204,7 +175,7 @@ describe('tab-manager', () => {
     });
 
     describe('onUpdated listener', () => {
-      it('re-injects interceptor when active tab completes loading', async () => {
+      it('re-activates interceptor when active tab completes loading', async () => {
         mockStorage.activeTabIds = [5, 10];
         mockStorage.rules = [];
 
@@ -215,8 +186,10 @@ describe('tab-manager', () => {
         await vi.advanceTimersByTimeAsync(200);
         await promise;
 
-        // Should have called executeScript for injection
-        expect(chrome.scripting.executeScript).toHaveBeenCalled();
+        expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(5, {
+          type: 'TAB_STATUS_CHANGED',
+          payload: { enabled: true },
+        });
       });
 
       it('ignores non-complete status changes', async () => {
@@ -227,7 +200,7 @@ describe('tab-manager', () => {
 
         await onUpdatedHandler(5, { status: 'loading' });
 
-        expect(chrome.scripting.executeScript).not.toHaveBeenCalled();
+        expect(chrome.tabs.sendMessage).not.toHaveBeenCalled();
       });
 
       it('ignores tabs not in active list', async () => {
@@ -238,7 +211,7 @@ describe('tab-manager', () => {
 
         await onUpdatedHandler(5, { status: 'complete' });
 
-        expect(chrome.scripting.executeScript).not.toHaveBeenCalled();
+        expect(chrome.tabs.sendMessage).not.toHaveBeenCalled();
       });
 
       it('ignores when changeInfo has no status', async () => {
@@ -249,7 +222,7 @@ describe('tab-manager', () => {
 
         await onUpdatedHandler(5, { url: 'https://example.com' });
 
-        expect(chrome.scripting.executeScript).not.toHaveBeenCalled();
+        expect(chrome.tabs.sendMessage).not.toHaveBeenCalled();
       });
     });
 
@@ -275,12 +248,10 @@ describe('tab-manager', () => {
 
         await onRemovedHandler(99);
 
-        // set should not be called because tab 99 was not active
         expect(chrome.storage.local.set).not.toHaveBeenCalled();
       });
 
       it('handles empty active tab list', async () => {
-        // No activeTabIds key in storage
         setupTabListeners();
         const onRemovedHandler = mockOnRemovedAddListener.mock.calls[0][0];
 
