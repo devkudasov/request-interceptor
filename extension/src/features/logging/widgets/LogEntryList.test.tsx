@@ -47,16 +47,16 @@ describe('LogEntryList', () => {
     expect(screen.getByText(/12ms/)).toBeInTheDocument();
   });
 
-  it('shows mocked icon for mocked entries', () => {
+  it('shows shield icon for mocked entries', () => {
     const { container } = render(<LogEntryList entries={mockEntries} />);
-    const mockedIcons = container.querySelectorAll('svg.text-green-500');
-    expect(mockedIcons.length).toBeGreaterThan(0);
+    const shieldIcons = container.querySelectorAll('img[src*="shield"]');
+    expect(shieldIcons.length).toBeGreaterThan(0);
   });
 
-  it('shows real icon for non-mocked entries', () => {
+  it('shows globe icon for non-mocked entries', () => {
     const { container } = render(<LogEntryList entries={mockEntries} />);
-    const realIcons = container.querySelectorAll('svg.text-blue-400');
-    expect(realIcons.length).toBeGreaterThan(0);
+    const globeIcons = container.querySelectorAll('img[src*="globe"]');
+    expect(globeIcons.length).toBeGreaterThan(0);
   });
 
   it('renders all entries', () => {

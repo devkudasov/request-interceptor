@@ -1,6 +1,6 @@
 import { Badge } from '@/ui/common/Badge';
 import { methodColors } from '@/ui/theme/tokens';
-import { MockedIcon, RealIcon } from '@/shared/utils/log-icons';
+import { ShieldIcon, GlobeIcon } from '@/ui/icons';
 import type { LogEntry } from '@/features/logging';
 
 function getStatusColor(code: number): string {
@@ -41,9 +41,9 @@ export function LogEntryList({ entries }: LogEntryListProps) {
               {entry.url}
             </span>
             {entry.mocked ? (
-              <MockedIcon className="text-green-500 shrink-0" />
+              <ShieldIcon className="shrink-0" />
             ) : (
-              <RealIcon className="text-blue-400 shrink-0" />
+              <GlobeIcon className="shrink-0" />
             )}
             <span className={getStatusColor(entry.statusCode)}>
               {entry.statusCode}
