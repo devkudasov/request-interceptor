@@ -47,32 +47,26 @@ describe('storage', () => {
 
   describe('getStorage', () => {
     it('returns stored value when it exists', async () => {
-      mockStorage.activeTabIds = [1, 2, 3];
-      const result = await getStorage('ACTIVE_TAB_IDS');
-      expect(result).toEqual([1, 2, 3]);
-      expect(chrome.storage.local.get).toHaveBeenCalledWith('activeTabIds');
+      mockStorage.rules = [{ id: 'r1' }];
+      const result = await getStorage('RULES');
+      expect(result).toEqual([{ id: 'r1' }]);
+      expect(chrome.storage.local.get).toHaveBeenCalledWith('rules');
     });
 
     it('returns default value when key does not exist in storage', async () => {
-      const result = await getStorage('ACTIVE_TAB_IDS');
-      expect(result).toEqual(DEFAULT_STORAGE.activeTabIds);
+      const result = await getStorage('RULES');
+      expect(result).toEqual(DEFAULT_STORAGE.rules);
     });
 
     it('returns default value when stored value is undefined', async () => {
-      mockStorage.activeTabIds = undefined;
-      const result = await getStorage('ACTIVE_TAB_IDS');
+      mockStorage.rules = undefined;
+      const result = await getStorage('RULES');
       expect(result).toEqual([]);
     });
 
-    it('returns stored boolean false without falling back to default', async () => {
-      mockStorage.isRecording = false;
-      const result = await getStorage('IS_RECORDING');
-      expect(result).toBe(false);
-    });
-
-    it('returns stored null without falling back to default when null is valid', async () => {
-      mockStorage.recordingTabId = null;
-      const result = await getStorage('RECORDING_TAB_ID');
+    it('returns stored null without falling back to default', async () => {
+      mockStorage.activeTabId = null;
+      const result = await getStorage('ACTIVE_TAB_ID');
       expect(result).toBeNull();
     });
 
@@ -86,39 +80,39 @@ describe('storage', () => {
 
   describe('setStorage', () => {
     it('sets value using the correct storage key', async () => {
-      await setStorage('ACTIVE_TAB_IDS', [5, 10]);
-      expect(chrome.storage.local.set).toHaveBeenCalledWith({ activeTabIds: [5, 10] });
-      expect(mockStorage.activeTabIds).toEqual([5, 10]);
-    });
-
-    it('sets boolean value', async () => {
-      await setStorage('IS_RECORDING', true);
-      expect(chrome.storage.local.set).toHaveBeenCalledWith({ isRecording: true });
+      await setStorage('RULES', []);
+      expect(chrome.storage.local.set).toHaveBeenCalledWith({ rules: [] });
+      expect(mockStorage.rules).toEqual([]);
     });
 
     it('sets null value', async () => {
-      await setStorage('RECORDING_TAB_ID', null);
-      expect(chrome.storage.local.set).toHaveBeenCalledWith({ recordingTabId: null });
+      await setStorage('ACTIVE_TAB_ID', null);
+      expect(chrome.storage.local.set).toHaveBeenCalledWith({ activeTabId: null });
+    });
+
+    it('sets string value', async () => {
+      await setStorage('AUTH_TOKEN', 'token123');
+      expect(chrome.storage.local.set).toHaveBeenCalledWith({ authToken: 'token123' });
     });
   });
 
   describe('updateStorage', () => {
     it('reads current value, applies updater, and stores result', async () => {
-      mockStorage.activeTabIds = [1, 2];
-      const result = await updateStorage('ACTIVE_TAB_IDS', (tabs) => [...tabs, 3]);
-      expect(result).toEqual([1, 2, 3]);
-      expect(mockStorage.activeTabIds).toEqual([1, 2, 3]);
+      mockStorage.rules = [{ id: 'r1' }];
+      const result = await updateStorage('RULES', (rules) => [...rules, { id: 'r2' } as never]);
+      expect(result).toEqual([{ id: 'r1' }, { id: 'r2' }]);
+      expect(mockStorage.rules).toEqual([{ id: 'r1' }, { id: 'r2' }]);
     });
 
     it('uses default value when storage is empty', async () => {
-      const result = await updateStorage('ACTIVE_TAB_IDS', (tabs) => [...tabs, 42]);
-      expect(result).toEqual([42]);
+      const result = await updateStorage('RULES', (rules) => [...rules, { id: 'r1' } as never]);
+      expect(result).toEqual([{ id: 'r1' }]);
     });
 
     it('returns the updated value', async () => {
-      mockStorage.isRecording = false;
-      const result = await updateStorage('IS_RECORDING', () => true);
-      expect(result).toBe(true);
+      mockStorage.activeTabId = null;
+      const result = await updateStorage('ACTIVE_TAB_ID', () => 42);
+      expect(result).toBe(42);
     });
   });
 
@@ -147,7 +141,7 @@ describe('storage', () => {
 
       const listener = mockAddListener.mock.calls[0][0];
       listener({
-        activeTabIds: { newValue: [1], oldValue: [] },
+        activeTabId: { newValue: 1, oldValue: null },
       });
 
       expect(callback).not.toHaveBeenCalled();
@@ -177,9 +171,7 @@ describe('storage', () => {
 
     it('does not overwrite existing keys', async () => {
       mockStorage = {
-        activeTabIds: [1, 2],
-        isRecording: true,
-        recordingTabId: 5,
+        activeTabId: 5,
         rules: [{ id: 'existing' }],
         collections: [],
         requestLog: [],
@@ -194,13 +186,13 @@ describe('storage', () => {
     });
 
     it('only sets missing keys when some are present', async () => {
-      mockStorage = { activeTabIds: [1] };
+      mockStorage = { activeTabId: 5 };
 
       await initializeStorage();
       const setCall = (chrome.storage.local.set as ReturnType<typeof vi.fn>).mock.calls[0][0];
-      expect(setCall).not.toHaveProperty('activeTabIds');
-      expect(setCall).toHaveProperty('isRecording');
+      expect(setCall).not.toHaveProperty('activeTabId');
       expect(setCall).toHaveProperty('rules');
+      expect(setCall).toHaveProperty('collections');
     });
   });
 });

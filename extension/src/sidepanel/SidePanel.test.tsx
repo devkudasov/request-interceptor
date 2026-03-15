@@ -193,15 +193,6 @@ vi.mock('@/features/sync', () => ({
   })),
 }));
 
-vi.mock('@/features/recording', () => ({
-  useRecordingStore: vi.fn(() => ({
-    isRecording: false,
-    recordedEntries: [],
-    startRecording: vi.fn(),
-    stopRecording: vi.fn(),
-  })),
-}));
-
 vi.mock('@/shared/stores', () => ({
   useTabsStore: vi.fn(() => ({
     tabs: [],
@@ -311,7 +302,7 @@ describe('SidePanel — TabSelector', () => {
     render(<SidePanel />);
 
     // TabSelector should render a combobox (select) for picking the active tab
-    expect(screen.getByRole('combobox')).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: /select active tab/i })).toBeInTheDocument();
   });
 });
 
