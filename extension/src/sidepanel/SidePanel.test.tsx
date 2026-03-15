@@ -274,6 +274,51 @@ describe('SidePanel — layout: BottomBar', () => {
   });
 });
 
+/* --- TabSelector integration --- */
+
+describe('SidePanel — TabSelector', () => {
+  it('renders TabSelector component', async () => {
+    const { SidePanel } = await import('./SidePanel');
+    render(<SidePanel />);
+
+    // TabSelector should render a combobox (select) for picking the active tab
+    expect(screen.getByRole('combobox')).toBeInTheDocument();
+  });
+});
+
+/* --- No multi-tab activation --- */
+
+describe('SidePanel — no multi-tab activation', () => {
+  it('does not render activateInterceptorsOnActiveTabs logic', async () => {
+    // The old activateInterceptorsOnActiveTabs function that iterated over
+    // activeTabIds from storage and sent TAB_STATUS_CHANGED + INJECT_RULES
+    // to multiple tabs should be removed. The SidePanel module should NOT
+    // contain this function after TASK-159 implementation.
+    const sidePanelModule = await import('./SidePanel');
+    const moduleSource = Object.keys(sidePanelModule);
+
+    // The function should not be exported
+    expect(moduleSource).not.toContain('activateInterceptorsOnActiveTabs');
+
+    // Additionally, chrome.storage.local.get should NOT be called with 'activeTabIds'
+    // during SidePanel mount (the old multi-tab activation path)
+    const mockStorageGet = chrome.storage.local.get as ReturnType<typeof vi.fn>;
+    mockStorageGet.mockClear();
+
+    render(<sidePanelModule.SidePanel />);
+
+    // Wait for any effects to run
+    await new Promise((r) => setTimeout(r, 0));
+
+    // Verify no call to get 'activeTabIds' was made
+    const calls = mockStorageGet.mock.calls;
+    const activeTabIdsCalls = calls.filter(
+      (c: unknown[]) => c[0] === 'activeTabIds',
+    );
+    expect(activeTabIdsCalls).toHaveLength(0);
+  });
+});
+
 /* --- Layout: LogPanel integration --- */
 
 describe('SidePanel — layout: LogPanel', () => {

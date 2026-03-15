@@ -411,6 +411,61 @@ describe('WorkspacePage — recording', () => {
   });
 });
 
+describe('WorkspacePage — recording UI removed', () => {
+  it('does NOT render RecordButton', () => {
+    renderPage();
+
+    // RecordButton rendered a "Record" button in the toolbar.
+    // After removal, no record button should exist in the toolbar.
+    // Note: WorkspaceToolbar may still have other buttons, but not Record/Stop.
+    expect(
+      screen.queryByRole('button', { name: /^record$/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('does NOT render RecordPopover', async () => {
+    storeState.tabs = [
+      { id: 101, title: 'Example', url: 'https://example.com', index: 0, pinned: false, highlighted: false, active: true, incognito: false, selected: false, windowId: 1, discarded: false, autoDiscardable: true, groupId: -1 },
+    ];
+    storeState.rules = [httpRule];
+    renderPage();
+
+    // RecordPopover heading should never appear since there is no way to trigger it
+    expect(screen.queryByText(/record api responses/i)).not.toBeInTheDocument();
+  });
+
+  it('does NOT render SaveRecordedPanel', () => {
+    storeState.isRecording = false;
+    storeState.recordedEntries = [
+      {
+        id: 'le1', timestamp: '2026-01-01T00:00:00Z', tabId: 101,
+        method: 'GET', url: 'https://api.example.com/data',
+        requestHeaders: {}, requestBody: null, statusCode: 200,
+        responseHeaders: {}, responseBody: '{"ok":true}',
+        responseSize: 12, duration: 100, mocked: false, matchedRuleId: null,
+      },
+    ];
+    renderPage();
+
+    // SaveRecordedPanel shows "Recorded Requests" heading and "Save as Rules" button
+    expect(screen.queryByText(/recorded requests/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /save as rules/i })).not.toBeInTheDocument();
+  });
+
+  it('does NOT import from features/recording', async () => {
+    // Read the WorkspacePage source file and verify it has no recording imports
+    const fs = await import('fs');
+    const path = await import('path');
+    const sourceFile = path.resolve(__dirname, 'WorkspacePage.tsx');
+    const source = fs.readFileSync(sourceFile, 'utf-8');
+
+    expect(source).not.toContain('features/recording');
+    expect(source).not.toContain('RecordPopover');
+    expect(source).not.toContain('SaveRecordedPanel');
+    expect(source).not.toContain('RecordButton');
+  });
+});
+
 describe('WorkspacePage — actions', () => {
   it('New Rule button navigates to /rules/new', async () => {
     const user = userEvent.setup();
