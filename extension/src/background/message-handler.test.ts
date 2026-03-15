@@ -93,12 +93,14 @@ vi.mock('./firestore-versions', () => ({
 }));
 
 vi.mock('./tab-manager', () => ({
-  injectInterceptor: vi.fn(() => Promise.resolve()),
-  removeInterceptor: vi.fn(() => Promise.resolve()),
+  setActiveTab: vi.fn(() => Promise.resolve()),
+  clearActiveTab: vi.fn(() => Promise.resolve()),
+  getActiveTabId: vi.fn(() => Promise.resolve(null)),
 }));
 
 import { setupMessageHandler } from './message-handler';
 import { MESSAGE_TYPES } from '@/shared/constants';
+import { setActiveTab, clearActiveTab } from './tab-manager';
 
 function sendMessage(type: string, payload?: unknown, sender?: unknown): Promise<unknown> {
   return new Promise((resolve) => {
@@ -151,46 +153,68 @@ describe('message-handler', () => {
     });
   });
 
-  describe('GET_ACTIVE_TABS', () => {
-    it('returns active tab ids from storage', async () => {
+  describe('SET_ACTIVE_TAB', () => {
+    it('calls setActiveTab when payload has a tabId', async () => {
       setupMessageHandler();
-      mockStorage.activeTabIds = [1, 2, 3];
 
-      const response = await sendMessage(MESSAGE_TYPES.GET_ACTIVE_TABS);
-      expect(response).toEqual({ ok: true, data: [1, 2, 3] });
+      const response = await sendMessage(MESSAGE_TYPES.SET_ACTIVE_TAB, { tabId: 5 });
+
+      expect(setActiveTab).toHaveBeenCalledWith(5);
+      expect((response as { ok: boolean }).ok).toBe(true);
     });
 
-    it('returns default empty array when none set', async () => {
+    it('calls clearActiveTab when payload tabId is null', async () => {
       setupMessageHandler();
 
-      const response = await sendMessage(MESSAGE_TYPES.GET_ACTIVE_TABS);
-      expect(response).toEqual({ ok: true, data: [] });
+      const response = await sendMessage(MESSAGE_TYPES.SET_ACTIVE_TAB, { tabId: null });
+
+      expect(clearActiveTab).toHaveBeenCalled();
+      expect(setActiveTab).not.toHaveBeenCalled();
+      expect((response as { ok: boolean }).ok).toBe(true);
     });
   });
 
-  describe('TOGGLE_TAB', () => {
-    it('adds tab id when enabling', async () => {
+  describe('no TOGGLE_TAB handler', () => {
+    it('returns error for TOGGLE_TAB message (handler does not exist)', async () => {
       setupMessageHandler();
-      mockStorage.activeTabIds = [1];
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-      const response = await sendMessage(MESSAGE_TYPES.TOGGLE_TAB, { tabId: 5, enabled: true });
-      expect(response).toEqual({ ok: true, data: [1, 5] });
+      const response = await sendMessage('TOGGLE_TAB', { tabId: 5, enabled: true });
+
+      expect(response).toEqual({ ok: false, error: 'Unknown message type' });
+      warnSpy.mockRestore();
+    });
+  });
+
+  describe('no recording handlers', () => {
+    it('returns error for START_RECORDING (handler does not exist)', async () => {
+      setupMessageHandler();
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const response = await sendMessage('START_RECORDING', { tabId: 5 });
+
+      expect(response).toEqual({ ok: false, error: 'Unknown message type' });
+      warnSpy.mockRestore();
     });
 
-    it('does not duplicate tab id', async () => {
+    it('returns error for STOP_RECORDING (handler does not exist)', async () => {
       setupMessageHandler();
-      mockStorage.activeTabIds = [5];
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-      const response = await sendMessage(MESSAGE_TYPES.TOGGLE_TAB, { tabId: 5, enabled: true });
-      expect(response).toEqual({ ok: true, data: [5] });
+      const response = await sendMessage('STOP_RECORDING');
+
+      expect(response).toEqual({ ok: false, error: 'Unknown message type' });
+      warnSpy.mockRestore();
     });
 
-    it('removes tab id when disabling', async () => {
+    it('returns error for RECORDING_DATA (handler does not exist)', async () => {
       setupMessageHandler();
-      mockStorage.activeTabIds = [1, 5, 10];
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-      const response = await sendMessage(MESSAGE_TYPES.TOGGLE_TAB, { tabId: 5, enabled: false });
-      expect(response).toEqual({ ok: true, data: [1, 10] });
+      const response = await sendMessage('RECORDING_DATA');
+
+      expect(response).toEqual({ ok: false, error: 'Unknown message type' });
+      warnSpy.mockRestore();
     });
   });
 
@@ -206,10 +230,10 @@ describe('message-handler', () => {
   });
 
   describe('CREATE_RULE', () => {
-    it('adds a new rule and broadcasts to active tabs', async () => {
+    it('adds a new rule and broadcasts to active tab', async () => {
       setupMessageHandler();
       mockStorage.rules = [];
-      mockStorage.activeTabIds = [];
+      mockStorage.activeTabId = null;
 
       const newRule = { id: 'r1', enabled: true, priority: 0 };
       const response = await sendMessage(MESSAGE_TYPES.CREATE_RULE, newRule);
@@ -223,7 +247,7 @@ describe('message-handler', () => {
     it('updates an existing rule by id', async () => {
       setupMessageHandler();
       mockStorage.rules = [{ id: 'r1', enabled: true, statusCode: 200, priority: 0 }];
-      mockStorage.activeTabIds = [];
+      mockStorage.activeTabId = null;
 
       await sendMessage(MESSAGE_TYPES.UPDATE_RULE, { id: 'r1', changes: { statusCode: 404 } });
 
@@ -236,7 +260,7 @@ describe('message-handler', () => {
     it('removes rule by id', async () => {
       setupMessageHandler();
       mockStorage.rules = [{ id: 'r1' }, { id: 'r2' }];
-      mockStorage.activeTabIds = [];
+      mockStorage.activeTabId = null;
 
       await sendMessage(MESSAGE_TYPES.DELETE_RULE, { id: 'r1' });
 
@@ -250,7 +274,7 @@ describe('message-handler', () => {
     it('toggles rule enabled state', async () => {
       setupMessageHandler();
       mockStorage.rules = [{ id: 'r1', enabled: true, priority: 0 }];
-      mockStorage.activeTabIds = [];
+      mockStorage.activeTabId = null;
 
       await sendMessage(MESSAGE_TYPES.TOGGLE_RULE, { id: 'r1' });
 
@@ -267,7 +291,7 @@ describe('message-handler', () => {
         { id: 'b', priority: 1 },
         { id: 'c', priority: 2 },
       ];
-      mockStorage.activeTabIds = [];
+      mockStorage.activeTabId = null;
 
       await sendMessage(MESSAGE_TYPES.REORDER_RULES, { orderedIds: ['c', 'a', 'b'] });
 
@@ -280,7 +304,7 @@ describe('message-handler', () => {
     it('filters out non-existent rule ids', async () => {
       setupMessageHandler();
       mockStorage.rules = [{ id: 'a', priority: 0 }];
-      mockStorage.activeTabIds = [];
+      mockStorage.activeTabId = null;
 
       await sendMessage(MESSAGE_TYPES.REORDER_RULES, { orderedIds: ['a', 'nonexistent'] });
 
@@ -330,10 +354,9 @@ describe('message-handler', () => {
   });
 
   describe('LOG_ENTRY', () => {
-    it('creates a log entry and returns it', async () => {
+    it('creates a log entry and broadcasts without recording check', async () => {
       setupMessageHandler();
       mockStorage.requestLog = [];
-      mockStorage.isRecording = false;
 
       const response = await sendMessage(
         MESSAGE_TYPES.LOG_ENTRY,
@@ -349,12 +372,18 @@ describe('message-handler', () => {
 
       const data = (response as { ok: boolean; data: { tabId: number } }).data;
       expect(data.tabId).toBe(42);
+
+      // Should broadcast to side panel
+      expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: MESSAGE_TYPES.LOG_ENTRY,
+        }),
+      );
     });
 
     it('uses tabId 0 when sender has no tab', async () => {
       setupMessageHandler();
       mockStorage.requestLog = [];
-      mockStorage.isRecording = false;
 
       const response = await sendMessage(
         MESSAGE_TYPES.LOG_ENTRY,
@@ -371,6 +400,31 @@ describe('message-handler', () => {
       const data = (response as { ok: boolean; data: { tabId: number } }).data;
       expect(data.tabId).toBe(0);
     });
+
+    it('does NOT check recording state or call addRecordedResponse', async () => {
+      setupMessageHandler();
+      mockStorage.requestLog = [];
+
+      // Even if isRecording were somehow true, LOG_ENTRY should not reference recording
+      await sendMessage(
+        MESSAGE_TYPES.LOG_ENTRY,
+        {
+          method: 'GET',
+          url: 'https://example.com',
+          statusCode: 200,
+          duration: 100,
+          mocked: false,
+        },
+        { tab: { id: 1 } },
+      );
+
+      // Verify no recording-related storage reads (isRecording, recordingTabId)
+      const getCalls = (chrome.storage.local.get as ReturnType<typeof vi.fn>).mock.calls;
+      const recordingReads = getCalls.filter(
+        (call) => call[0] === 'isRecording' || call[0] === 'recordingTabId',
+      );
+      expect(recordingReads).toHaveLength(0);
+    });
   });
 
   describe('CLEAR_LOG', () => {
@@ -384,49 +438,58 @@ describe('message-handler', () => {
     });
   });
 
-  describe('Recording handlers', () => {
-    it('START_RECORDING sets up recording', async () => {
+  describe('broadcastRulesToActiveTab', () => {
+    it('sends enabled rules to the active tab', async () => {
       setupMessageHandler();
-      mockStorage.activeTabIds = [];
-      mockStorage.rules = [];
+      mockStorage.rules = [
+        { id: 'r1', enabled: true, priority: 2 },
+        { id: 'r2', enabled: false, priority: 0 },
+        { id: 'r3', enabled: true, priority: 1 },
+      ];
+      mockStorage.activeTabId = 10;
 
-      const promise = sendMessage(MESSAGE_TYPES.START_RECORDING, { tabId: 5 });
-      await vi.advanceTimersByTimeAsync(200);
-      const response = await promise;
+      // Trigger broadcast by creating a rule
+      await sendMessage(MESSAGE_TYPES.CREATE_RULE, { id: 'r4', enabled: true, priority: 3 });
 
-      expect((response as { ok: boolean }).ok).toBe(true);
-      expect(mockStorage.isRecording).toBe(true);
-      expect(mockStorage.recordingTabId).toBe(5);
+      // Check tabs.sendMessage was called for the active tab
+      const tabSendCalls = (chrome.tabs.sendMessage as ReturnType<typeof vi.fn>).mock.calls;
+      const rulesMessages = tabSendCalls.filter(
+        (call) => call[1]?.type === MESSAGE_TYPES.INJECT_RULES,
+      );
+      expect(rulesMessages.length).toBe(1);
+      expect(rulesMessages[0][0]).toBe(10);
+
+      // Rules should be sorted by priority (enabled only)
+      const sentRules = rulesMessages[0][1].payload;
+      expect(sentRules.map((r: { id: string }) => r.id)).toEqual(['r3', 'r1', 'r4']);
     });
 
-    it('START_RECORDING adds tab to active tabs if not already present', async () => {
+    it('does not send rules when no tab is active', async () => {
       setupMessageHandler();
-      mockStorage.activeTabIds = [1];
-      mockStorage.rules = [];
+      mockStorage.rules = [{ id: 'r1', enabled: true, priority: 0 }];
+      mockStorage.activeTabId = null;
 
-      const promise = sendMessage(MESSAGE_TYPES.START_RECORDING, { tabId: 5 });
-      await vi.advanceTimersByTimeAsync(200);
-      await promise;
+      await sendMessage(MESSAGE_TYPES.CREATE_RULE, { id: 'r2', enabled: true, priority: 1 });
 
-      expect(mockStorage.activeTabIds).toEqual([1, 5]);
+      const tabSendCalls = (chrome.tabs.sendMessage as ReturnType<typeof vi.fn>).mock.calls;
+      const rulesMessages = tabSendCalls.filter(
+        (call) => call[1]?.type === MESSAGE_TYPES.INJECT_RULES,
+      );
+      expect(rulesMessages).toHaveLength(0);
     });
 
-    it('STOP_RECORDING stops recording and returns captured data', async () => {
+    it('handles sendMessage failure to the active tab', async () => {
       setupMessageHandler();
-      mockStorage.isRecording = true;
-      mockStorage.recordingTabId = 5;
+      mockStorage.rules = [{ id: 'r1', enabled: true, priority: 0 }];
+      mockStorage.activeTabId = 10;
 
-      const response = await sendMessage(MESSAGE_TYPES.STOP_RECORDING);
-      expect((response as { ok: boolean }).ok).toBe(true);
-      expect(mockStorage.isRecording).toBe(false);
-    });
+      (chrome.tabs.sendMessage as ReturnType<typeof vi.fn>)
+        .mockRejectedValueOnce(new Error('Tab closed'));
 
-    it('RECORDING_DATA returns recorded responses', async () => {
-      setupMessageHandler();
-
-      const response = await sendMessage(MESSAGE_TYPES.RECORDING_DATA);
-      expect((response as { ok: boolean; data: unknown[] }).ok).toBe(true);
-      expect((response as { data: unknown[] }).data).toEqual([]);
+      // Should not throw even if tab fails
+      await expect(
+        sendMessage(MESSAGE_TYPES.CREATE_RULE, { id: 'r2', enabled: true, priority: 1 }),
+      ).resolves.toBeDefined();
     });
   });
 
@@ -442,49 +505,6 @@ describe('message-handler', () => {
 
       const response = await sendMessage(MESSAGE_TYPES.GET_USER_TEAMS);
       expect(response).toEqual({ ok: false, error: 'Auth failed' });
-    });
-  });
-
-  describe('broadcastRulesToActiveTabs', () => {
-    it('sends enabled rules sorted by priority to all active tabs', async () => {
-      setupMessageHandler();
-      mockStorage.rules = [
-        { id: 'r1', enabled: true, priority: 2 },
-        { id: 'r2', enabled: false, priority: 0 },
-        { id: 'r3', enabled: true, priority: 1 },
-      ];
-      mockStorage.activeTabIds = [10, 20];
-
-      // Trigger broadcastRulesToActiveTabs by creating a rule
-      await sendMessage(MESSAGE_TYPES.CREATE_RULE, { id: 'r4', enabled: true, priority: 3 });
-
-      // Check tabs.sendMessage was called for each active tab
-      const tabSendCalls = (chrome.tabs.sendMessage as ReturnType<typeof vi.fn>).mock.calls;
-      const rulesMessages = tabSendCalls.filter(
-        (call) => call[1]?.type === MESSAGE_TYPES.INJECT_RULES,
-      );
-      expect(rulesMessages.length).toBe(2);
-      expect(rulesMessages[0][0]).toBe(10);
-      expect(rulesMessages[1][0]).toBe(20);
-
-      // Rules should be sorted by priority (enabled only)
-      const sentRules = rulesMessages[0][1].payload;
-      expect(sentRules.map((r: { id: string }) => r.id)).toEqual(['r3', 'r1', 'r4']);
-    });
-
-    it('handles sendMessage failure to individual tabs', async () => {
-      setupMessageHandler();
-      mockStorage.rules = [{ id: 'r1', enabled: true, priority: 0 }];
-      mockStorage.activeTabIds = [10, 20];
-
-      (chrome.tabs.sendMessage as ReturnType<typeof vi.fn>)
-        .mockRejectedValueOnce(new Error('Tab closed'))
-        .mockResolvedValueOnce(undefined);
-
-      // Should not throw even if one tab fails
-      await expect(
-        sendMessage(MESSAGE_TYPES.CREATE_RULE, { id: 'r2', enabled: true, priority: 1 }),
-      ).resolves.toBeDefined();
     });
   });
 });
