@@ -47,14 +47,16 @@ describe('LogEntryList', () => {
     expect(screen.getByText(/12ms/)).toBeInTheDocument();
   });
 
-  it('shows MOCKED badge for mocked entries', () => {
-    render(<LogEntryList entries={mockEntries} />);
-    expect(screen.getByText('MOCKED')).toBeInTheDocument();
+  it('shows mocked icon for mocked entries', () => {
+    const { container } = render(<LogEntryList entries={mockEntries} />);
+    const mockedIcons = container.querySelectorAll('svg.text-green-500');
+    expect(mockedIcons.length).toBeGreaterThan(0);
   });
 
-  it('shows REAL badge for non-mocked entries', () => {
-    render(<LogEntryList entries={mockEntries} />);
-    expect(screen.getByText('REAL')).toBeInTheDocument();
+  it('shows real icon for non-mocked entries', () => {
+    const { container } = render(<LogEntryList entries={mockEntries} />);
+    const realIcons = container.querySelectorAll('svg.text-blue-400');
+    expect(realIcons.length).toBeGreaterThan(0);
   });
 
   it('renders all entries', () => {

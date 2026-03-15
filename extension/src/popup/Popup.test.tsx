@@ -57,6 +57,7 @@ vi.stubGlobal('chrome', {
 import { Popup } from './Popup';
 
 beforeEach(() => {
+  window.close = vi.fn();
   vi.clearAllMocks();
   tabsStoreState = {
     tabs: [],

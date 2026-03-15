@@ -19,6 +19,7 @@ function PopupContent() {
 
   const openSidePanel = () => {
     chrome.sidePanel.open({ windowId: chrome.windows.WINDOW_ID_CURRENT });
+    window.close();
   };
 
   if (loading) {

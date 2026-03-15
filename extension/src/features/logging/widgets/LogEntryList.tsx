@@ -1,6 +1,15 @@
 import { Badge } from '@/ui/common/Badge';
 import { methodColors } from '@/ui/theme/tokens';
+import { MockedIcon, RealIcon } from '@/shared/utils/log-icons';
 import type { LogEntry } from '@/features/logging';
+
+function getStatusColor(code: number): string {
+  if (code >= 500) return 'text-red-700';
+  if (code >= 400) return 'text-status-error';
+  if (code >= 300) return 'text-yellow-500';
+  if (code >= 200) return 'text-green-500';
+  return 'text-blue-400';
+}
 
 interface LogEntryListProps {
   entries: LogEntry[];
@@ -31,16 +40,12 @@ export function LogEntryList({ entries }: LogEntryListProps) {
             <span className="flex-1 truncate text-content-primary">
               {entry.url}
             </span>
-            <Badge variant={entry.mocked ? 'success' : 'info'}>
-              {entry.mocked ? 'MOCKED' : 'REAL'}
-            </Badge>
-            <span
-              className={
-                entry.statusCode >= 400
-                  ? 'text-status-error'
-                  : 'text-content-secondary'
-              }
-            >
+            {entry.mocked ? (
+              <MockedIcon className="text-green-500 shrink-0" />
+            ) : (
+              <RealIcon className="text-blue-400 shrink-0" />
+            )}
+            <span className={getStatusColor(entry.statusCode)}>
               {entry.statusCode}
             </span>
             <span className="text-content-muted">{entry.duration}ms</span>

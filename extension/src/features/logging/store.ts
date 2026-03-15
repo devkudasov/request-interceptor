@@ -32,6 +32,7 @@ export const useLogStore = create<LogState>((set) => ({
   addEntry: (entry) =>
     set((s) => {
       if (s.paused) return s;
+      if (entry.url.startsWith('chrome-extension://')) return s;
       return { entries: [entry, ...s.entries].slice(0, 1000) };
     }),
 

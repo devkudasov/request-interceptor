@@ -82,7 +82,7 @@ describe('LogPanel', () => {
 
   it('delegates entry rendering to LogEntryList', () => {
     renderPanel({ isOpen: true });
-    expect(screen.getByText('MOCKED')).toBeInTheDocument();
     expect(screen.getByText('200')).toBeInTheDocument();
+    expect(screen.getByText('https://api.example.com/users')).toBeInTheDocument();
   });
 });

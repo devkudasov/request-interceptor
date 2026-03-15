@@ -10,6 +10,31 @@ import { RuleEditorPage } from '@/screens/RuleEditorPage';
 import { VersionHistoryPage } from '@/screens/VersionHistoryPage';
 import { BillingPage } from '@/screens/BillingPage';
 
+async function activateInterceptorsOnActiveTabs() {
+  try {
+    const result = await chrome.storage.local.get('activeTabIds');
+    const activeTabIds: number[] = result.activeTabIds ?? [];
+    for (const tabId of activeTabIds) {
+      try {
+        await chrome.tabs.sendMessage(tabId, {
+          type: 'TAB_STATUS_CHANGED',
+          payload: { enabled: true },
+        });
+        const rulesResult = await chrome.storage.local.get('rules');
+        const rules = (rulesResult.rules ?? []).filter((r: { enabled: boolean }) => r.enabled);
+        await chrome.tabs.sendMessage(tabId, {
+          type: 'INJECT_RULES',
+          payload: rules,
+        });
+      } catch {
+        // Tab might not have content script yet
+      }
+    }
+  } catch {
+    // Ignore
+  }
+}
+
 export function SidePanel() {
   const { isOpen, togglePanel, unseenCount } = useLogPanelStore();
 
@@ -17,6 +42,7 @@ export function SidePanel() {
     useAuthStore.getState().fetchUser();
     useAuthStore.getState().startAuthListener();
     useLogStore.getState().startListening();
+    activateInterceptorsOnActiveTabs();
   }, []);
 
   return (

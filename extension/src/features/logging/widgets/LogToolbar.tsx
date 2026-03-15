@@ -1,4 +1,5 @@
 import { Button } from '@/ui/common/Button';
+import { PauseIcon, PlayIcon, TrashIcon, XIcon } from '@/ui/icons';
 
 interface LogToolbarProps {
   paused: boolean;
@@ -23,7 +24,7 @@ export function LogToolbar({
           aria-label={paused ? 'Resume' : 'Pause'}
           onClick={onTogglePause}
         >
-          {paused ? 'Resume' : 'Pause'}
+          {paused ? <PlayIcon /> : <PauseIcon />}
         </Button>
         <Button
           variant="ghost"
@@ -31,7 +32,7 @@ export function LogToolbar({
           aria-label="Clear"
           onClick={onClear}
         >
-          Clear
+          <TrashIcon />
         </Button>
         <Button
           variant="ghost"
@@ -39,7 +40,7 @@ export function LogToolbar({
           aria-label="Close"
           onClick={onClose}
         >
-          Close
+          <XIcon />
         </Button>
       </div>
     </div>

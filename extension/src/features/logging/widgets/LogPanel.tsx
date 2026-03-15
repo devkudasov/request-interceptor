@@ -16,7 +16,7 @@ export function LogPanel({ isOpen, onClose }: LogPanelProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="flex flex-col border-t border-border bg-surface-primary">
+    <div className="flex flex-col max-h-[40vh] border-t border-border bg-surface-primary">
       <LogToolbar
         paused={paused}
         onTogglePause={togglePause}
