@@ -1,3 +1,4 @@
+// DEPRECATED: This store is replaced by active-tab.ts. Will be deleted in TASK-158.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useTabsStore } from './tabs';
 
