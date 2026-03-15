@@ -12,7 +12,7 @@ const mockUseStorageUsage = vi.fn(() => ({
 }));
 
 vi.mock('@/shared/hooks/useStorageUsage', () => ({
-  useStorageUsage: (...args: unknown[]) => mockUseStorageUsage(...args),
+  useStorageUsage: () => mockUseStorageUsage(),
 }));
 
 const mockLogout = vi.fn();
