@@ -71,6 +71,10 @@ let authStoreState = {
   error: null as string | null,
 };
 
+vi.mock('@/shared/hooks/useStorageUsage', () => ({
+  useStorageUsage: () => ({ usedBytes: 0, loading: false }),
+}));
+
 vi.mock('@/features/auth', () => ({
   useAuthStore: vi.fn(() => ({
     ...authStoreState,

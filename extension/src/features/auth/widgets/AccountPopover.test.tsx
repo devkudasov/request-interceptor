@@ -5,6 +5,16 @@ import { MemoryRouter } from 'react-router-dom';
 import { AccountPopover } from './AccountPopover';
 import type { AuthUser } from '@/features/auth';
 
+// Mock useStorageUsage hook — returns realistic bytes so StorageBar receives real data
+const mockUseStorageUsage = vi.fn(() => ({
+  usedBytes: 2_621_440,
+  loading: false,
+}));
+
+vi.mock('@/shared/hooks/useStorageUsage', () => ({
+  useStorageUsage: () => mockUseStorageUsage(),
+}));
+
 const mockLogout = vi.fn();
 const mockFetchUser = vi.fn();
 const mockLogin = vi.fn();
@@ -205,5 +215,38 @@ describe('AccountPopover — billing navigation', () => {
     expect(
       screen.queryByRole('button', { name: /manage plan/i }),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe('AccountPopover — storage usage', () => {
+  beforeEach(() => {
+    mockUser = { ...freeUser };
+    mockUseStorageUsage.mockReturnValue({ usedBytes: 2_621_440, loading: false });
+  });
+
+  it('passes real usedBytes from useStorageUsage to StorageBar (not hardcoded 0)', () => {
+    renderPopover();
+
+    const progressbar = screen.getByRole('progressbar');
+    // Free plan quota is 5 * 1024 * 1024 = 5_242_880 bytes
+    // 2_621_440 / 5_242_880 = 50%
+    expect(progressbar).toHaveAttribute('aria-valuenow', '50');
+  });
+
+  it('reflects different usedBytes values from the hook', () => {
+    mockUseStorageUsage.mockReturnValue({ usedBytes: 1_048_576, loading: false });
+    renderPopover();
+
+    const progressbar = screen.getByRole('progressbar');
+    // 1_048_576 / 5_242_880 = 20%
+    expect(progressbar).toHaveAttribute('aria-valuenow', '20');
+  });
+
+  it('shows 0% when hook returns 0 usedBytes', () => {
+    mockUseStorageUsage.mockReturnValue({ usedBytes: 0, loading: false });
+    renderPopover();
+
+    const progressbar = screen.getByRole('progressbar');
+    expect(progressbar).toHaveAttribute('aria-valuenow', '0');
   });
 });

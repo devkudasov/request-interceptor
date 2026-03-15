@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/features/auth';
+import { useStorageUsage } from '@/shared/hooks/useStorageUsage';
 import { AuthForm } from './AuthForm';
 import { StorageBar } from './StorageBar';
 import { Badge } from '@/ui/common/Badge';
@@ -17,6 +18,7 @@ interface AccountPopoverProps {
 export function AccountPopover({ onClose }: AccountPopoverProps) {
   const navigate = useNavigate();
   const { user, loading, logout } = useAuthStore();
+  const { usedBytes } = useStorageUsage();
 
   if (!user) {
     return (
@@ -37,7 +39,6 @@ export function AccountPopover({ onClose }: AccountPopoverProps) {
   }
 
   const quota = PLAN_LIMITS[user.plan].storageBytes;
-  const used = 0;
 
   return (
     <div className="p-md flex flex-col gap-lg">
@@ -90,7 +91,7 @@ export function AccountPopover({ onClose }: AccountPopoverProps) {
       )}
 
       {/* Storage usage */}
-      <StorageBar usedBytes={used} totalBytes={quota} />
+      <StorageBar usedBytes={usedBytes} totalBytes={quota} />
 
       {/* Actions */}
       <div className="flex flex-col gap-sm">
