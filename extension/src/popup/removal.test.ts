@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
-import { readFileSync, existsSync } from 'fs';
+import { describe, it, expect } from 'vitest';
+import { readFileSync, existsSync, readdirSync } from 'fs';
 import { resolve } from 'path';
 
 const MANIFEST_PATH = resolve(__dirname, '../../public/manifest.json');
@@ -22,15 +22,9 @@ describe('Popup removal — popup HTML file', () => {
 
 describe('Popup removal — side panel opens on action click', () => {
   it('background script calls chrome.sidePanel.setPanelBehavior with openPanelOnActionClick: true', () => {
-    // Read the background entry point and its imports to verify the call exists
-    const backgroundPath = resolve(__dirname, '../background/index.ts');
-    const backgroundSource = readFileSync(backgroundPath, 'utf-8');
-
-    // The call could be in index.ts or in one of its imported modules.
-    // We check all files in the background directory for the specific API call.
+    // Check all files in the background directory for the specific API call.
     const backgroundDir = resolve(__dirname, '../background');
-    const fs = require('fs');
-    const files = fs.readdirSync(backgroundDir) as string[];
+    const files = readdirSync(backgroundDir) as string[];
     const allBackgroundCode = files
       .filter((f: string) => f.endsWith('.ts') || f.endsWith('.js'))
       .map((f: string) => readFileSync(resolve(backgroundDir, f), 'utf-8'))

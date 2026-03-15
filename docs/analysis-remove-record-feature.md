@@ -437,3 +437,33 @@ Given the single-tab architecture proposal, the recommendation changes significa
 ### Total estimated effort: 4-6 days
 
 This is comparable to the original "enhance Logs then remove Record" plan but delivers a fundamentally simpler product.
+
+---
+
+## 16. Implementation Status
+
+**Status: Complete** (2026-03-15)
+
+All migration tasks (TASK-153 through TASK-172) have been completed. The single-tab architecture is fully implemented:
+
+### Completed phases:
+
+| Phase | Tasks | Status |
+|---|---|---|
+| **Phase 1: Single-Tab Architecture** | TASK-153 through TASK-158 | Done |
+| **Phase 2: Remove Popup** | TASK-159, TASK-160 | Done |
+| **Phase 3: Remove Record Feature** | TASK-161 through TASK-167 | Done |
+| **Phase 4: Cleanup & Documentation** | TASK-168 through TASK-172 | Done |
+
+### What was delivered:
+
+- **TabSelector** component in SidePanel header — dropdown for selecting the single active tab
+- **Single active tab model** — `activeTabId: number | null` replaced `activeTabIds: number[]`
+- **Popup removed** — extension icon click opens SidePanel directly via `chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })`
+- **Recording feature removed** — all recording stores, components, background handlers, and message types deleted
+- **`convertEntriesToRules` utility preserved** — relocated to `src/shared/utils/` for potential future batch-save feature
+- **All tests passing** — 73 test files, 977 tests
+- **TypeScript strict mode** — zero type errors
+- **Lint clean** — zero warnings/errors
+- **Build succeeds** — production build completes successfully
+- **PRD updated** — FR-005/006/007 (multi-tab), FR-020/021/022 (recording), US-001, US-007 all marked as removed/replaced

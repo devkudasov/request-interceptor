@@ -84,19 +84,19 @@ describe('DEFAULT_STORAGE', () => {
 
     it('does NOT have activeTabIds property', () => {
       expect(
-        (DEFAULT_STORAGE as Record<string, unknown>).activeTabIds,
+        (DEFAULT_STORAGE as unknown as Record<string, unknown>).activeTabIds,
       ).toBeUndefined();
     });
 
     it('does NOT have isRecording property', () => {
       expect(
-        (DEFAULT_STORAGE as Record<string, unknown>).isRecording,
+        (DEFAULT_STORAGE as unknown as Record<string, unknown>).isRecording,
       ).toBeUndefined();
     });
 
     it('does NOT have recordingTabId property', () => {
       expect(
-        (DEFAULT_STORAGE as Record<string, unknown>).recordingTabId,
+        (DEFAULT_STORAGE as unknown as Record<string, unknown>).recordingTabId,
       ).toBeUndefined();
     });
   });

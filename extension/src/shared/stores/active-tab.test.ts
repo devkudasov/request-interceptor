@@ -57,12 +57,12 @@ describe('useActiveTabStore', () => {
     });
 
     it('does NOT have activeTabIds (multi-tab removed)', () => {
-      const state = useActiveTabStore.getState() as Record<string, unknown>;
+      const state = useActiveTabStore.getState() as unknown as Record<string, unknown>;
       expect(state.activeTabIds).toBeUndefined();
     });
 
     it('does NOT have toggleTab method', () => {
-      const state = useActiveTabStore.getState() as Record<string, unknown>;
+      const state = useActiveTabStore.getState() as unknown as Record<string, unknown>;
       expect(state.toggleTab).toBeUndefined();
     });
   });

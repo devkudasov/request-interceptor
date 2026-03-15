@@ -29,20 +29,6 @@ const collection: Collection = {
   order: 0, ruleIds: ['r1', 'r2'], createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
 };
 
-const mockTabs: chrome.tabs.Tab[] = [
-  {
-    id: 101, title: 'Example App', url: 'https://example.com',
-    index: 0, pinned: false, highlighted: false, active: true,
-    incognito: false, selected: false, windowId: 1,
-    discarded: false, autoDiscardable: true, groupId: -1,
-  },
-  {
-    id: 102, title: 'Other Tab', url: 'https://other.com',
-    index: 1, pinned: false, highlighted: false, active: false,
-    incognito: false, selected: false, windowId: 1,
-    discarded: false, autoDiscardable: true, groupId: -1,
-  },
-];
 
 const logEntries: LogEntry[] = [
   {
