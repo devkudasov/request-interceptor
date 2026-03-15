@@ -1,6 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useRecordingStore } from './store';
 import type { LogEntry } from '@/features/logging/types';
+import type { MockRule } from '@/features/rules/types';
+import { useRulesStore } from '@/features/rules/store';
+
+vi.mock('@/features/rules/store', () => ({
+  useRulesStore: {
+    getState: vi.fn(),
+  },
+}));
 
 const mockSendMessage = vi.fn();
 vi.stubGlobal('chrome', {
@@ -163,6 +171,103 @@ describe('useRecordingStore', () => {
         { type: 'RECORDING_DATA', payload: undefined },
         expect.any(Function),
       );
+    });
+  });
+
+  describe('saveRecordedAsRules', () => {
+    const mockCreateRule = vi.fn();
+
+    beforeEach(() => {
+      mockCreateRule.mockReset();
+      mockCreateRule.mockImplementation((ruleData) =>
+        Promise.resolve({
+          ...ruleData,
+          id: `rule-${Math.random().toString(36).slice(2)}`,
+          priority: 0,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        } as MockRule),
+      );
+      vi.mocked(useRulesStore.getState).mockReturnValue({
+        createRule: mockCreateRule,
+      } as unknown as ReturnType<typeof useRulesStore.getState>);
+    });
+
+    it('converts recorded entries and creates rules via rulesStore', async () => {
+      const entries = [
+        makeLogEntry({
+          id: 'e1',
+          url: 'https://api.example.com/users',
+          method: 'GET',
+          statusCode: 200,
+          responseHeaders: { 'content-type': 'application/json' },
+          responseBody: '[{"id":1}]',
+        }),
+      ];
+      useRecordingStore.setState({ recordedEntries: entries });
+
+      const result = await useRecordingStore.getState().saveRecordedAsRules();
+
+      expect(mockCreateRule).toHaveBeenCalledTimes(1);
+      expect(mockCreateRule).toHaveBeenCalledWith(
+        expect.objectContaining({
+          urlPattern: 'https://api.example.com/users',
+          method: 'GET',
+          statusCode: 200,
+          responseBody: '[{"id":1}]',
+          enabled: true,
+        }),
+      );
+      expect(result).toHaveLength(1);
+    });
+
+    it('clears recordedEntries after saving', async () => {
+      const entries = [
+        makeLogEntry({
+          id: 'e1',
+          responseBody: '{"ok":true}',
+        }),
+      ];
+      useRecordingStore.setState({ recordedEntries: entries });
+
+      await useRecordingStore.getState().saveRecordedAsRules();
+
+      expect(useRecordingStore.getState().recordedEntries).toEqual([]);
+    });
+
+    it('returns empty array when no entries', async () => {
+      useRecordingStore.setState({ recordedEntries: [] });
+
+      const result = await useRecordingStore.getState().saveRecordedAsRules();
+
+      expect(result).toEqual([]);
+      expect(mockCreateRule).not.toHaveBeenCalled();
+    });
+
+    it('skips entries with null responseBody', async () => {
+      const entries = [
+        makeLogEntry({
+          id: 'e1',
+          url: 'https://api.example.com/no-body',
+          responseBody: null,
+        }),
+        makeLogEntry({
+          id: 'e2',
+          url: 'https://api.example.com/with-body',
+          responseBody: '{"data":true}',
+        }),
+      ];
+      useRecordingStore.setState({ recordedEntries: entries });
+
+      const result = await useRecordingStore.getState().saveRecordedAsRules();
+
+      expect(mockCreateRule).toHaveBeenCalledTimes(1);
+      expect(mockCreateRule).toHaveBeenCalledWith(
+        expect.objectContaining({
+          urlPattern: 'https://api.example.com/with-body',
+        }),
+      );
+      expect(result).toHaveLength(1);
     });
   });
 });
